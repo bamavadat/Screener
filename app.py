@@ -56,8 +56,8 @@ class OpenRouterAPI:
              print(f"    --- USER PROMPT CONTENT (last 400 chars for API messages if long) ---:\n...{user_prompt_content[-400:]}\n    -----------------------------", file=sys.stderr)
         print(f"    Total length of user_prompt_content being sent: {len(user_prompt_content)} characters.", file=sys.stderr)
 
-        your_site_url = "http://SQLBOT.pythonanywhere.com" # Use your actual domain
-        your_site_name = "Screener SQL Bot"    # Use your actual site name
+        your_site_url = "http://SQLBOT.pythonanywhere.com"
+        your_site_name = "Screener SQL Bot"
 
         extra_headers = {
             "HTTP-Referer": your_site_url,
@@ -76,7 +76,7 @@ class OpenRouterAPI:
                 ],
                 stream=False,
                 temperature=0.2,
-                max_tokens=164000
+                max_tokens=2000
             )
 
             api_call_end_time = time.perf_counter()
@@ -170,7 +170,6 @@ document_loaded = False
 initial_default_content = ""
 source_of_current_document = "None"
 
-# Global Statistics for Server Session
 session_total_queries = 0
 session_total_cost = 0.0
 session_total_response_time_ms = 0.0
@@ -230,16 +229,23 @@ print(f"DEBUG: app.py - User login set to: {user_login}", file=sys.stderr)
 # --- Flask Routes ---
 @app.route('/')
 def index_route():
-    print(f"DEBUG: app.py - / route accessed at {datetime.now(timezone.utc)}", file=sys.stderr)
-    return render_template('index.html', user_login=user_login)
+    print(f"DEBUG: app.py - / route accessed at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}. Attempting to render index.html.", file=sys.stderr)
+    try:
+        return render_template('index.html', user_login=user_login) # Restored template rendering
+    except Exception as e:
+        print(f"ERROR in / route (index_route) during render_template: {e}", file=sys.stderr)
+        # Return a more informative error to the browser if render_template fails
+        return f"Error rendering template: {str(e)}", 500
+
 
 @app.route('/sync_onedrive_document', methods=['POST'])
 def sync_onedrive_document_route():
-    print(f"DEBUG: app.py - /sync_onedrive_document route accessed at {datetime.now(timezone.utc)}", file=sys.stderr)
+    print(f"DEBUG: app.py - /sync_onedrive_document route accessed at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
     global current_document, document_loaded, source_of_current_document
     script_dir = os.path.dirname(os.path.abspath(__file__))
     onedrive_script_path = os.path.join(script_dir, "onedrive.py")
     log_ts_start = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+
     if not os.path.exists(onedrive_script_path):
         print(f"[{log_ts_start}] Error: onedrive.py script not found at {onedrive_script_path}", file=sys.stderr)
         return jsonify({"success": False, "error": "onedrive.py script not found."})
@@ -275,10 +281,9 @@ def sync_onedrive_document_route():
         print(f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] Error in sync route: {e}", file=sys.stderr)
         return jsonify({"success": False, "error": f"Sync error: {str(e)}"})
 
-
 @app.route('/ask_question', methods=['POST'])
 def ask_question_route():
-    print(f"DEBUG: app.py - /ask_question route accessed at {datetime.now(timezone.utc)}", file=sys.stderr)
+    print(f"DEBUG: app.py - /ask_question route accessed at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
     global current_document, document_loaded
     if not document_loaded or not current_document or not current_document.strip():
         return jsonify({"success": False, "error": "No document loaded or document is empty. Please load or sync a document first."})
@@ -292,7 +297,7 @@ def ask_question_route():
 
 @app.route('/status')
 def status_route():
-    print(f"DEBUG: app.py - /status route accessed at {datetime.now(timezone.utc)}", file=sys.stderr)
+    print(f"DEBUG: app.py - /status route accessed at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
     global current_document, document_loaded, source_of_current_document
     ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
     doc_length = len(current_document) if current_document else 0
@@ -309,7 +314,7 @@ def status_route():
 
 @app.route('/clear')
 def clear_route():
-    print(f"DEBUG: app.py - /clear route accessed at {datetime.now(timezone.utc)}", file=sys.stderr)
+    print(f"DEBUG: app.py - /clear route accessed at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
     global current_document, document_loaded, initial_default_content, source_of_current_document, DEFAULT_DOC_FILENAME
     ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
     message = ""
@@ -341,12 +346,11 @@ def clear_route():
 
 @app.route('/test_api')
 def test_api_route():
-    print(f"DEBUG: app.py - /test_api route accessed at {datetime.now(timezone.utc)}", file=sys.stderr)
+    print(f"DEBUG: app.py - /test_api route accessed at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
     ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
     is_example_key = OPENROUTER_API_KEY == "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"
-    # A more generic placeholder string to check against
-    generic_placeholder_check = "YOUR_OPENROUTER_API_KEY_HERE" # Or any other placeholder you might use
+    generic_placeholder_check = "YOUR_OPENROUTER_API_KEY_HERE"
 
     if generic_placeholder_check in OPENROUTER_API_KEY:
         print(f"[{ts}] API Test: Using a generic placeholder API key. Test will likely fail authentication.", file=sys.stderr)
@@ -377,7 +381,7 @@ def test_api_route():
 
 @app.route('/api_info')
 def api_info_route():
-    print(f"DEBUG: app.py - /api_info route accessed at {datetime.now(timezone.utc)}", file=sys.stderr)
+    print(f"DEBUG: app.py - /api_info route accessed at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
     global session_total_queries, session_total_cost, session_total_response_time_ms
 
     avg_cost = 0
@@ -394,7 +398,7 @@ def api_info_route():
         "current_user": user_login,
         "current_time_utc": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S'),
         "api_endpoint": "https://openrouter.ai/api/v1",
-        "session_stats_server_side": { # Clarify these are server-side session stats
+        "session_stats_server_side": {
             "total_queries_since_server_start": session_total_queries,
             "total_cost_usd_since_server_start": round(session_total_cost, 8),
             "total_response_time_ms_since_server_start": round(session_total_response_time_ms, 2),
@@ -406,23 +410,15 @@ def api_info_route():
 print("DEBUG: app.py - Flask routes defined", file=sys.stderr)
 
 if __name__ == '__main__':
-    # This block is for local development only.
-    # PythonAnywhere uses the WSGI file and the 'application' object.
     print("DEBUG: app.py - Script is being run directly (e.g., local development)", file=sys.stderr)
-    # Make sure to create 'templates' folder in the same directory as app.py for local dev.
     templates_dir_local = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
     if not os.path.exists(templates_dir_local):
         os.makedirs(templates_dir_local)
         print(f"DEBUG: app.py - Created 'templates' directory for local development at {templates_dir_local}", file=sys.stderr)
-        # You might want to add a placeholder index.html here if running locally without it
-        # with open(os.path.join(templates_dir_local, 'index.html'), 'w') as f:
-        #     f.write("<h1>Local Dev Placeholder</h1><p>This is index.html for local dev.</p>")
 
-    # Print startup messages for local dev too
     print("="*70, file=sys.stderr)
     print("🚀 DocuQuery SQL Bot with OpenRouter API (Enhanced Stats) - LOCAL DEV MODE", file=sys.stderr)
     print("="*70, file=sys.stderr)
-    # ... (You can copy the startup messages from the server __main__ block here for consistency if you like)
     app.run(debug=True, host='0.0.0.0', port=5000)
 
 print("DEBUG: app.py - End of file reached, application object 'app' should be defined.", file=sys.stderr)
