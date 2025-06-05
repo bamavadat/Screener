@@ -80,7 +80,7 @@
             flex: 3;
             display: flex;
             flex-direction: column;
-            padding: 0;
+            padding: 0px 20px 20px 20px;
             border-right: 1px solid var(--border-color);
             overflow: hidden;
             transition: flex 0.3s ease-in-out;
@@ -131,17 +131,17 @@
             padding: 20px;
             background-color: var(--primary-bg);
             border-radius: var(--border-radius);
-            margin-bottom: 15px; /* Reduced margin */
+            margin-bottom: 15px;
             border: 1px solid var(--border-color);
         }
         .message {
             margin-bottom: 18px; padding: 12px 18px;
-            padding-bottom: 38px;
+            padding-bottom: 38px; /* Space for actions */
             border-radius: var(--border-radius);
             max-width: 75%;
             clear: both; word-wrap: break-word;
             box-shadow: 0 2px 5px rgba(0,0,0,0.06);
-            position: relative;
+            position: relative; /* For absolute positioning of actions */
         }
         .message.user { background: var(--accent-color); color: var(--text-light); margin-left: auto; border-bottom-right-radius: 4px; }
         .message.bot { background: var(--container-bg); border: 1px solid var(--border-color); color: var(--text-primary); margin-right: auto; border-bottom-left-radius: 4px; }
@@ -156,7 +156,7 @@
             right: 8px;
             display: flex;
             gap: 8px;
-            opacity: 1; /* Always visible */
+            opacity: 1; /* Make always visible, or 0 then message:hover .message-actions {opacity:1;} */
         }
         .message-action-button {
             background: transparent;
@@ -173,7 +173,7 @@
             width: 28px; height: 28px;
             transition: background-color 0.2s;
         }
-        .message-action-button svg { width: 14px; height: 14px; fill: currentColor; } /* Slightly smaller icons */
+        .message-action-button svg { width: 14px; height: 14px; fill: currentColor; }
         .message.user .message-action-button {
             color: rgba(255,255,255,0.7);
         }
@@ -217,7 +217,7 @@
         .chat-input-area button:disabled { background-color: #adb5bd; cursor: not-allowed; }
 
         .sidebar { /* ID: appSidebar */ flex: 1; padding: 20px; background-color: var(--sidebar-bg); overflow-y: auto; display: flex; flex-direction: column; gap: 20px; transition: flex 0.3s ease-in-out, padding 0.3s ease-in-out, opacity 0.3s ease-in-out, width 0.3s ease-in-out; }
-        .sidebar.hidden { display: none !important; } /* To completely hide sidebar */
+        .sidebar.hidden { display: none !important; }
 
         .sidebar-section { background-color: var(--container-bg); padding: 20px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); }
         .sidebar-section h3 { font-size: 1.1em; color: var(--text-primary); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); font-weight: 600; }
@@ -236,30 +236,31 @@
         .stats-panel-content { padding: 0; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
         .stat-item { background: var(--primary-bg); padding: 10px; border-radius: 6px; text-align: center; }
-        .stat-value { font-size: 1.2em; font-weight: 600; color: var(--accent-color); }
+        .stat-value { font-size: 1.2em; font-weight: 600; color: var(--accent-color); } /* Adjusted font size */
         .stat-label { font-size: 0.75em; color: var(--text-secondary); }
 
         .loading-indicator { text-align: center; padding: 10px 0; display: none; justify-content:center; align-items:center; flex-direction: column; }
-        .spinner { width: 20px; height:20px; border-width: 2px; margin-bottom: 4px; display: inline-block; border: 3px solid rgba(0,0,0,0.1); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 1s linear infinite; }
-        .loading-indicator p {font-size: 0.85em; color: var(--text-secondary);}
+        .spinner { width: 18px; height:18px; border-width: 2px; margin-bottom: 3px; display: inline-block; border: 3px solid rgba(0,0,0,0.1); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 1s linear infinite; }
+        .loading-indicator p {font-size: 0.8em; color: var(--text-secondary);}
 
         .recent-questions-section { margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);}
         .recent-questions-section h4 { font-size: 0.9em; color: var(--text-secondary); margin-bottom: 8px; font-weight: 500;}
-        .recent-questions-list { list-style: none; padding: 0; max-height: 100px; overflow-y: auto;}
+        .recent-questions-list { list-style: none; padding: 0; max-height: 120px; overflow-y: auto;}
         .recent-questions-list li {
             padding: 6px 10px;
             margin-bottom: 4px;
             background-color: #f1f3f5;
+            border: 1px solid #e7eaed;
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.85em;
             color: var(--text-primary);
-            transition: background-color 0.2s;
+            transition: background-color 0.2s, border-color 0.2s;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .recent-questions-list li:hover { background-color: #e2e6ea; }
+        .recent-questions-list li:hover { background-color: #e2e6ea; border-color: #d1d8df; }
 
 
         .chat-history-container::-webkit-scrollbar, .sidebar::-webkit-scrollbar { width: 6px; }
@@ -271,7 +272,7 @@
             .app-main-layout { flex-direction: column; }
             .main-content-area { border-right: none; border-bottom: 1px solid var(--border-color); padding: 0px 10px 10px 10px; }
             .sidebar { max-height: none; padding: 10px; flex: 1; }
-            .main-content-area.expanded-for-general-chat { flex: 1 !important; } /* Ensure it can expand */
+            .main-content-area.expanded-for-general-chat { flex: 1 !important; }
             .sidebar.hidden-for-general-chat { display: none !important; }
             .tabs-nav { margin-left:10px; margin-right:10px; }
         }
@@ -284,7 +285,7 @@
             .app-main-layout { padding: 0px; gap:0px; }
             .main-content-area, .sidebar { padding: 10px; }
             .sidebar-section {padding: 15px;}
-            .chat-history-container { height: calc(100vh - 350px); /* Adjusted for recent questions */ }
+            .chat-history-container { height: calc(100vh - 370px); /* Adjusted for recent questions & stats */ }
             .stats-grid { grid-template-columns: 1fr; }
         }
     </style>
@@ -350,6 +351,18 @@
                             <h4>Recent General Messages:</h4>
                             <ul id="general-recent-questions-list" class="recent-questions-list"></ul>
                         </div>
+                        <div class="sidebar-section" id="generalChatStatsSectionInline" style="margin-top: 20px; box-shadow: none; border-top: 1px solid var(--border-color); border-radius:0; padding: 15px 0 0 0;">
+                            <h3>📊 General Chat Statistics</h3>
+                            <div class="stats-panel-content">
+                                <div class="stats-grid general-stats">
+                                    <div class="stat-item"><div class="stat-value" id="stat-gen-queries">0</div><div class="stat-label">Queries</div></div>
+                                    <div class="stat-item"><div class="stat-value" id="stat-gen-total-tokens">0</div><div class="stat-label">Tokens</div></div>
+                                    <div class="stat-item"><div class="stat-value" id="stat-gen-total-cost">$0.00</div><div class="stat-label">Cost</div></div>
+                                    <div class="stat-item"><div class="stat-value" id="stat-gen-avg-cost">$0.00</div><div class="stat-label">Avg. Cost</div></div>
+                                    <div class="stat-item"><div class="stat-value" id="stat-gen-avg-time">0s</div><div class="stat-label">Avg. Time</div></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -378,18 +391,6 @@
                         </div>
                     </div>
                 </div>
-                 <div class="sidebar-section" id="generalChatStatsSection" style="display:none;"> {/* Initially hidden */}
-                    <h3>📊 General Chat Statistics</h3>
-                    <div class="stats-panel-content">
-                        <div class="stats-grid general-stats">
-                            <div class="stat-item"><div class="stat-value" id="stat-gen-queries">0</div><div class="stat-label">Queries</div></div>
-                            <div class="stat-item"><div class="stat-value" id="stat-gen-total-tokens">0</div><div class="stat-label">Tokens</div></div>
-                            <div class="stat-item"><div class="stat-value" id="stat-gen-total-cost">$0.00</div><div class="stat-label">Cost</div></div>
-                            <div class="stat-item"><div class="stat-value" id="stat-gen-avg-cost">$0.00</div><div class="stat-label">Avg. Cost</div></div>
-                            <div class="stat-item"><div class="stat-value" id="stat-gen-avg-time">0s</div><div class="stat-label">Avg. Time</div></div>
-                        </div>
-                    </div>
-                </div>
                 <div class="sidebar-section" id="utilitiesSection">
                      <h3>⚙️ Utilities</h3>
                      <button class="btn btn-test-api-small" onclick="handleTestAPI()" style="margin-top: 10px; display: block; text-align:center;">Test API Connectivity</button>
@@ -399,11 +400,10 @@
     </div>
 
     <script>
-        // SVG Icons
         const copyIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
         const editIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
-
         const MAX_RECENT_QUESTIONS = 5;
+
         const sqlBotStats = { queries: 0, totalTokens: 0, totalCost: 0.0, documentChars: 0, totalResponseTimeMs: 0.0, recentQuestions: [] };
         const generalChatStats = { queries: 0, totalTokens: 0, totalCost: 0.0, totalResponseTimeMs: 0.0, recentQuestions: [] };
 
@@ -411,34 +411,28 @@
         let generalChatHistory = [];
         let sqlBotChatHistory = [];
 
-        // --- DOM Elements ---
         const tehranTimeDisplay = document.getElementById('tehran-time-display');
         const apiStatusText = document.getElementById('api-status-text');
-
         const sqlInitialWelcomeTime = document.getElementById('sql-initial-welcome-time');
         const sqlChatMessagesContainer = document.getElementById('sql-chat-messages-container');
         const sqlChatLoadingSpinner = document.getElementById('sql-chat-loading-spinner');
         const sqlQuestionInputField = document.getElementById('sql-question-input-field');
         const sqlAskQuestionButton = document.getElementById('sql-ask-question-button');
         const sqlRecentQuestionsList = document.getElementById('sql-recent-questions-list');
-
         const generalInitialWelcomeTime = document.getElementById('general-initial-welcome-time');
         const generalChatMessagesContainer = document.getElementById('general-chat-messages-container');
         const generalChatLoadingSpinner = document.getElementById('general-chat-loading-spinner');
         const generalChatInputField = document.getElementById('general-chat-input-field');
         const generalChatSendButton = document.getElementById('general-chat-send-button');
         const generalRecentQuestionsList = document.getElementById('general-recent-questions-list');
-
         const documentOperationStatus = document.getElementById('document-operation-status');
         const docPreviewContainer = document.getElementById('doc-preview-container');
         const docSourceDisplay = document.getElementById('doc-source-display');
-
         const appSidebar = document.getElementById('appSidebar');
         const mainContentAreaWithTabs = document.getElementById('mainContentAreaWithTabs');
         const docControlSection = document.getElementById('docControlSection');
         const sqlBotStatsSection = document.getElementById('sqlBotStatsSection');
-        const generalChatStatsSection = document.getElementById('generalChatStatsSection'); // New
-        const utilitiesSection = document.getElementById('utilitiesSection'); // New for utils like API test
+        const utilitiesSection = document.getElementById('utilitiesSection');
 
         const statSqlQueries = document.getElementById('stat-sql-queries');
         const statSqlTotalTokens = document.getElementById('stat-sql-total-tokens');
@@ -446,14 +440,12 @@
         const statSqlTotalCost = document.getElementById('stat-sql-total-cost');
         const statSqlAvgCost = document.getElementById('stat-sql-avg-cost');
         const statSqlAvgTime = document.getElementById('stat-sql-avg-time');
-
         const statGenQueries = document.getElementById('stat-gen-queries');
         const statGenTotalTokens = document.getElementById('stat-gen-total-tokens');
         const statGenTotalCost = document.getElementById('stat-gen-total-cost');
         const statGenAvgCost = document.getElementById('stat-gen-avg-cost');
         const statGenAvgTime = document.getElementById('stat-gen-avg-time');
 
-        // --- Tab Management ---
         function openTab(evt, tabName) {
             let i, tc, tb;
             tc=document.getElementsByClassName("tab-content");
@@ -464,46 +456,67 @@
             document.getElementById(tabName).classList.add("active");
             evt.currentTarget.classList.add("active");
 
-            // Dynamic sidebar content and layout
             if (tabName === 'sqlBotTab') {
-                if(appSidebar) appSidebar.style.display = 'flex'; // Show sidebar
-                if(mainContentAreaWithTabs) mainContentAreaWithTabs.style.flex = '3'; // Main content standard size
-                if(docControlSection) docControlSection.style.display = 'block';
-                if(sqlBotStatsSection) sqlBotStatsSection.style.display = 'block';
-                if(generalChatStatsSection) generalChatStatsSection.style.display = 'none'; // Hide general stats
-                if(utilitiesSection) utilitiesSection.style.display = 'block'; // Show utilities
+                if(appSidebar) appSidebar.style.display = 'flex';
+                if(mainContentAreaWithTabs) mainContentAreaWithTabs.style.flex = '3';
             } else if (tabName === 'generalChatTab') {
-                if(appSidebar) appSidebar.style.display = 'flex'; // Keep sidebar for Gen Chat Stats
-                if(mainContentAreaWithTabs) mainContentAreaWithTabs.style.flex = '3'; // Main content standard size
-                if(docControlSection) docControlSection.style.display = 'none'; // Hide SQL specific
-                if(sqlBotStatsSection) sqlBotStatsSection.style.display = 'none'; // Hide SQL specific
-                if(generalChatStatsSection) generalChatStatsSection.style.display = 'block'; // Show general stats
-                if(utilitiesSection) utilitiesSection.style.display = 'block'; // Show utilities
+                if(appSidebar) appSidebar.style.display = 'none';
+                if(mainContentAreaWithTabs) mainContentAreaWithTabs.style.flex = '1';
             }
         }
 
-        function updateTehranTime() { /* ... (identical) ... */ if (tehranTimeDisplay) { try { const t = new Date().toLocaleTimeString("en-GB", { timeZone: "Asia/Tehran", hour:'2-digit', minute:'2-digit', second:'2-digit', hourCycle:'h23' }); tehranTimeDisplay.textContent=t; } catch (e) { console.warn("TZ Asia/Tehran err"); tehranTimeDisplay.textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});}}}
-        function escapeHtml(t) { /* ... (identical) ... */ if(typeof t!=='string')return t; return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
-        function showOpStatus(m, type='info') { /* ... (identical) ... */ documentOperationStatus.innerHTML=`<div class="status-message ${type}">${escapeHtml(m)}</div>`; if(type!=='error'&&type!=='info'){setTimeout(()=>{if(documentOperationStatus && documentOperationStatus.innerHTML.includes(escapeHtml(m)))documentOperationStatus.innerHTML='';},5000);}}
+        function updateTehranTime() { if (tehranTimeDisplay) { try { const t = new Date().toLocaleTimeString("en-GB", { timeZone: "Asia/Tehran", hour:'2-digit', minute:'2-digit', second:'2-digit', hourCycle:'h23' }); tehranTimeDisplay.textContent=t; } catch (e) { console.warn("TZ Asia/Tehran err"); tehranTimeDisplay.textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});}}}
+        function escapeHtml(t) { if(typeof t!=='string')return t; return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
+        function showOpStatus(m, type='info') { if(documentOperationStatus){documentOperationStatus.innerHTML=`<div class="status-message ${type}">${escapeHtml(m)}</div>`; if(type!=='error'&&type!=='info'){setTimeout(()=>{if(documentOperationStatus && documentOperationStatus.innerHTML.includes(escapeHtml(m)))documentOperationStatus.innerHTML='';},5000);}}}
         function showLoadingSpinner(el,iL){if(el)el.style.display=iL?'flex':'none';}
 
         function updateSessionStatsDisplay() {
-            statSqlQueries.textContent = sqlBotStats.queries;
-            statSqlTotalTokens.textContent = sqlBotStats.totalTokens.toLocaleString();
-            statSqlTotalCost.textContent = `$${sqlBotStats.totalCost.toFixed(6)}`;
-            statDocChars.textContent = sqlBotStats.documentChars.toLocaleString();
+            if(statSqlQueries) statSqlQueries.textContent = sqlBotStats.queries;
+            if(statSqlTotalTokens) statSqlTotalTokens.textContent = sqlBotStats.totalTokens.toLocaleString();
+            if(statSqlTotalCost) statSqlTotalCost.textContent = `$${sqlBotStats.totalCost.toFixed(6)}`;
+            if(statDocChars) statDocChars.textContent = sqlBotStats.documentChars.toLocaleString();
             const sqlAvgCostVal = sqlBotStats.queries > 0 ? (sqlBotStats.totalCost / sqlBotStats.queries) : 0;
-            statSqlAvgCost.textContent = `$${sqlAvgCostVal.toFixed(6)}`;
+            if(statSqlAvgCost) statSqlAvgCost.textContent = `$${sqlAvgCostVal.toFixed(6)}`;
             const sqlAvgTimeVal = sqlBotStats.queries > 0 ? (sqlBotStats.totalResponseTimeMs / sqlBotStats.queries / 1000) : 0;
-            statSqlAvgTime.textContent = `${sqlAvgTimeVal.toFixed(1)}s`;
+            if(statSqlAvgTime) statSqlAvgTime.textContent = `${sqlAvgTimeVal.toFixed(1)}s`;
 
-            statGenQueries.textContent = generalChatStats.queries;
-            statGenTotalTokens.textContent = generalChatStats.totalTokens.toLocaleString();
-            statGenTotalCost.textContent = `$${generalChatStats.totalCost.toFixed(6)}`;
+            if(statGenQueries) statGenQueries.textContent = generalChatStats.queries;
+            if(statGenTotalTokens) statGenTotalTokens.textContent = generalChatStats.totalTokens.toLocaleString();
+            if(statGenTotalCost) statGenTotalCost.textContent = `$${generalChatStats.totalCost.toFixed(6)}`;
             const genAvgCostVal = generalChatStats.queries > 0 ? (generalChatStats.totalCost / generalChatStats.queries) : 0;
-            statGenAvgCost.textContent = `$${genAvgCostVal.toFixed(6)}`;
+            if(statGenAvgCost) statGenAvgCost.textContent = `$${genAvgCostVal.toFixed(6)}`;
             const genAvgTimeVal = generalChatStats.queries > 0 ? (generalChatStats.totalResponseTimeMs / generalChatStats.queries / 1000) : 0;
-            statGenAvgTime.textContent = `${genAvgTimeVal.toFixed(1)}s`;
+            if(statGenAvgTime) statGenAvgTime.textContent = `${genAvgTimeVal.toFixed(1)}s`;
+        }
+
+        function addRecentQuestion(question, type) {
+            const questionsArray = type === 'sql' ? sqlBotStats.recentQuestions : generalChatStats.recentQuestions;
+            const listElement = type === 'sql' ? sqlRecentQuestionsList : generalRecentQuestionsList;
+            const inputField = type === 'sql' ? sqlQuestionInputField : generalChatInputField;
+            if(!listElement || !questionsArray) return;
+
+            questionsArray.unshift(question);
+            if (questionsArray.length > MAX_RECENT_QUESTIONS) questionsArray.pop();
+            renderRecentQuestions(listElement, questionsArray, inputField);
+        }
+
+        function renderRecentQuestions(listElement, questionsArray, inputFieldElement) {
+            if (!listElement) return;
+            listElement.innerHTML = '';
+            questionsArray.forEach(qText => {
+                const li = document.createElement('li');
+                li.textContent = qText.length > 50 ? qText.substring(0, 47) + "..." : qText;
+                li.title = qText;
+                li.onclick = () => useRecentQuestion(qText, inputFieldElement);
+                listElement.appendChild(li);
+            });
+        }
+
+        function useRecentQuestion(questionText, inputFieldElement) {
+            if (inputFieldElement) {
+                inputFieldElement.value = questionText;
+                inputFieldElement.focus();
+            }
         }
 
         function addChatMessage(container, text, senderIsUser = false, apiMeta = {}, isStreamingPlaceholder = false) {
@@ -538,9 +551,11 @@
                 } else if (responseText.trim() === "" ) {
                     textContentWrapper += `<em>[API returned an empty string as its answer.]</em>`;
                 } else {
-                    // Markdown rendering happens on 'done' event in handleStreamedApiRequest for General Chat
-                    // For SQL bot, if it's not SQL, or for non-streaming, display as plain text
-                    textContentWrapper += escapeHtml(responseText).replace(/\n/g, '<br>');
+                    if (typeof marked === 'function' && container === generalChatMessagesContainer) {
+                        textContentWrapper += marked.parse(responseText, { breaks: true, gfm: true, sanitize: false });
+                    } else {
+                        textContentWrapper += escapeHtml(responseText).replace(/\n/g, '<br>');
+                    }
                 }
             } else if (senderIsUser) {
                  textContentWrapper += escapeHtml(responseText).replace(/\n/g, '<br>');
@@ -556,9 +571,10 @@
             if (!senderIsUser && apiMeta && apiMeta.success === true && !isStreamingPlaceholder && responseText.trim() !== "" && responseText.trim() !== "[API Call Successful but no message content in choices]") {
                 actionsHtml += `<button class="message-action-button" title="Copy" onclick="copyToClipboard(this.closest('.message').dataset.originalText || this.closest('.message').querySelector('.message-text-content').innerText)">${copyIconSvg}</button>`;
             }
-            if (senderIsUser) {
-                actionsHtml += `<button class="message-action-button" title="Edit" onclick="editUserMessage(this.closest('.message'))">${editIconSvg}</button>`;
-            }
+            // Edit button for user messages only, for now
+            // if (senderIsUser) {
+            //     actionsHtml += `<button class="message-action-button" title="Edit" onclick="editUserMessage(this.closest('.message'))">${editIconSvg}</button>`;
+            // }
             actionsHtml += '</div>';
 
             if (!senderIsUser && (apiMeta.success === true || isApiError)) {
@@ -589,164 +605,202 @@
             return messageDiv.id;
         }
 
-        function copyToClipboard(text) { /* ... (Identical) ... */ console.log("Attempting to copy (raw text):", text); if (document.queryCommandSupported && document.queryCommandSupported("copy")) { const ta = document.createElement("textarea"); ta.textContent=text; ta.style.position="fixed"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); showOpStatus("Copied!", "success"); } catch (ex) { console.warn("Copy failed.", ex); showOpStatus("Failed to copy.", "error"); } finally { document.body.removeChild(ta); }} else { console.warn("Copy not supported."); showOpStatus("Copy not supported.", "error"); }}
-        function editUserMessage(messageDiv) { /* ... (Identical) ... */ const mtc=messageDiv.querySelector('.message-text-content'); const og=messageDiv.dataset.originalText; if(!mtc||og===undefined)return; mtc.style.display='none'; const ad=messageDiv.querySelector('.message-actions'); if(ad)ad.style.display='none'; let ea=messageDiv.querySelector('.edit-area'); if(!ea){ea=document.createElement('div');ea.className='edit-area';const ta=document.createElement('textarea');ta.className='editing-textarea';let te=og; if(mtc.querySelector('pre code')){te=og;} else if(messageDiv.closest('#general-chat-messages-container')){te=og;} else{te=og.replace(/<br\s*\/?>/gi,"\n");} ta.value=te;const ct=document.createElement('div');ct.className='edit-controls';const sb=document.createElement('button');sb.textContent='Save & Resend';sb.className='save-edit-btn';sb.onclick=()=>saveUserEdit(messageDiv,ta.value);const cb=document.createElement('button');cb.textContent='Cancel';cb.className='cancel-edit-btn';cb.onclick=()=>cancelUserEdit(messageDiv);ct.appendChild(sb);ct.appendChild(cb);ea.appendChild(ta);ea.appendChild(ct);messageDiv.insertBefore(ea,mtc);}else{ea.style.display='block';const ta=ea.querySelector('textarea');let te=og;if(mtc.querySelector('pre code')){te=og;}else if(messageDiv.closest('#general-chat-messages-container')){te=og;}else{te=og.replace(/<br\s*\/?>/gi,"\n");}ta.value=te;ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length);}}
-        function saveUserEdit(messageDiv, newText) { /* ... (Identical) ... */ const c=messageDiv.closest('.chat-history-container');messageDiv.dataset.originalText=newText;const mtc=messageDiv.querySelector('.message-text-content'); if(c===generalChatMessagesContainer && typeof marked === 'function'){mtc.innerHTML=marked.parse(newText,{breaks:true,gfm:true});} else if (c===sqlChatMessagesContainer && /\b(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|FROM|WHERE|JOIN|GRANT|REVOKE|WITH|VALUES|TABLE|VIEW|INDEX|DATABASE|PROCEDURE|FUNCTION)\b/i.test(newText)){mtc.innerHTML=`<pre><code class="language-sql">${escapeHtml(newText)}</code></pre>`; const cb=mtc.querySelector('code.language-sql');if(cb&&window.Prism)Prism.highlightElement(cb);} else {mtc.innerHTML=escapeHtml(newText).replace(/\n/g,'<br>');} mtc.style.display='block';const ea=messageDiv.querySelector('.edit-area');if(ea)ea.style.display='none';const ad=messageDiv.querySelector('.message-actions');if(ad)ad.style.display='flex';if(c===sqlChatMessagesContainer){sqlBotChatHistory.push({"role":"user","content":newText});handleStreamedApiRequest('/ask_question',{question:newText},sqlChatMessagesContainer,sqlChatLoadingSpinner,sqlBotChatHistory);}else if(c===generalChatMessagesContainer){generalChatHistory.push({"role":"user","content":newText});handleStreamedApiRequest('/stream_general_chat',{messages:generalChatHistory},generalChatMessagesContainer,generalChatLoadingSpinner,generalChatHistory);}}
-        function cancelUserEdit(messageDiv) { /* ... (Identical) ... */ const mtc=messageDiv.querySelector('.message-text-content');mtc.style.display='block';const ea=messageDiv.querySelector('.edit-area');if(ea)ea.style.display='none';const ad=messageDiv.querySelector('.message-actions');if(ad)ad.style.display='flex';}
+        function copyToClipboard(text) { console.log("Attempting to copy (raw text):", text); if (document.queryCommandSupported && document.queryCommandSupported("copy")) { const ta = document.createElement("textarea"); ta.textContent=text; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); showOpStatus("Copied!", "success"); } catch (ex) { console.warn("Copy failed.", ex); showOpStatus("Failed to copy.", "error"); } finally { document.body.removeChild(ta); }} else { console.warn("Copy not supported."); showOpStatus("Copy not supported.", "error"); }}
 
-        async function makeApiRequestNonStreaming(endpoint, method = 'GET', body = null) { /* ... (Identical) ... */ const cs=(endpoint==='/sync_onedrive_document'||endpoint==='/status'||endpoint==='/test_api')?sqlChatLoadingSpinner:null;if(cs)showLoadingSpinner(cs,true);const co=window.location.origin;if((endpoint==='/status'||endpoint==='/test_api')&&(co==="null"||co.startsWith("blob:")||co.includes("usercontent.goog"))){const emsg=`Preview. API calls to '${endpoint}' skipped.`;console.warn(emsg);if(apiStatusText&&endpoint==='/test_api')apiStatusText.textContent='⚠ Preview';if(docSourceDisplay&&endpoint==='/status')docSourceDisplay.textContent='Preview';if(cs)showLoadingSpinner(cs,false);return{success:false,error:emsg,inPreview:true};}const fu=co+endpoint;console.log("Non-stream fetch: "+fu);try{const o={method};if(body){o.headers={'Content-Type':'application/json'};o.body=JSON.stringify(body);}const r=await fetch(fu,o);if(!r.ok){const et=await r.text();console.error(`HTTP error ${r.status} for ${fu}: ${et.substring(0,500)}`);throw new Error(`HTTP error ${r.status}`);}return await r.json();}catch(e){console.error(`API req to ${fu} failed:`,e);return{success:false,error:`Req to ${endpoint} failed: ${e.message}`};}finally{if(cs)showLoadingSpinner(cs,false);}}
-        async function handleStreamedApiRequest(endpoint, payload, chatContainer, loadingSpinner, chatHistoryArray = null) {
-            if(loadingSpinner) showLoadingSpinner(loadingSpinner, true);
+        async function makeApiRequest(endpoint, method = 'GET', body = null, isStreaming = false, chatContainer = null, loadingSpinner = null) {
+            if(loadingSpinner && isStreaming) showLoadingSpinner(loadingSpinner, true);
+            else if (loadingSpinner && !isStreaming) showLoadingSpinner(loadingSpinner, true);
+
+
             const currentOrigin = window.location.origin;
-            if ((currentOrigin === "null" || currentOrigin.startsWith("blob:") || currentOrigin.includes("usercontent.goog"))) {
-                const errorMsg = `Preview environment. Streaming API calls to '${endpoint}' are best tested via http://localhost:5000 or your deployed URL.`;
-                console.warn(errorMsg);
-                addChatMessage(chatContainer, errorMsg, false, { error: "Preview Mode Limitations", success: false });
-                if(loadingSpinner) showLoadingSpinner(loadingSpinner, false);
-                return;
-            }
-            const fullApiUrl = currentOrigin + endpoint;
-            console.log(`Initiating stream to: ${fullApiUrl} with payload:`, payload);
+            console.log("Current window.location.origin for API call:", currentOrigin);
 
-            let botMessagePlaceholderId = addChatMessage(chatContainer, "typing...", false, {success:true}, true);
-            let botResponseAccumulator = "";
-            let lastEventDataForStats = {};
-            let firstChunkReceived = false;
+            if ((endpoint === '/status' || endpoint === '/test_api') &&
+                (currentOrigin === "null" || currentOrigin.startsWith("blob:") || currentOrigin.includes("usercontent.goog"))) {
+                const errorMsg = `Preview environment detected. Initial API calls to '${endpoint}' skipped. Test by running the Flask app and accessing via http://localhost:5000 or your deployed URL.`;
+                console.warn(errorMsg);
+                if (apiStatusText && endpoint === '/test_api') apiStatusText.textContent = '⚠ Preview Mode';
+                if (docSourceDisplay && endpoint === '/status') docSourceDisplay.textContent = 'Preview Mode';
+                if(loadingSpinner) showLoadingSpinner(loadingSpinner, false);
+                return {success:false, error: errorMsg, inPreview: true };
+            }
+            const fullUrl = currentOrigin + endpoint;
+            console.log("Attempting API request to: " + fullUrl, "Method:", method, "Body:", body);
 
             try {
-                const response = await fetch(fullApiUrl, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({error: `HTTP error ${response.status} - ${response.statusText}`}));
-                    throw new Error(errorData.error || `HTTP error ${response.status}`);
-                }
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let serverSentEventBuffer = "";
+                const opt = { method };
+                if (body) { opt.headers = {'Content-Type': 'application/json'}; opt.body = JSON.stringify(body); }
 
-                while (true) {
-                    const { value, done: readerDone } = await reader.read();
-                    if (readerDone) { console.log("Stream reader marked as done."); break; }
+                if (isStreaming) {
+                    const response = await fetch(fullUrl, opt);
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({error: `HTTP error ${response.status} - ${response.statusText}`}));
+                        throw new Error(errorData.error || `HTTP error ${response.status}`);
+                    }
 
-                    serverSentEventBuffer += decoder.decode(value, { stream: true });
-                    let eventEndIndex;
-                    while ((eventEndIndex = serverSentEventBuffer.indexOf("\n\n")) >= 0) {
-                        const eventString = serverSentEventBuffer.substring(0, eventEndIndex);
-                        serverSentEventBuffer = serverSentEventBuffer.substring(eventEndIndex + 2);
-                        if (eventString.startsWith("data: ")) {
-                            const jsonDataString = eventString.substring(6);
-                            try {
-                                const eventData = JSON.parse(jsonDataString);
-                                const targetMessageDiv = document.getElementById(botMessagePlaceholderId);
-                                if (targetMessageDiv) {
-                                    const contentDiv = targetMessageDiv.querySelector('.message-text-content');
-                                    if (!contentDiv) continue;
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let serverSentEventBuffer = "";
+                    let botResponseAccumulator = "";
+                    let currentStreamTargetId = addChatMessage(chatContainer, "", false, {success:true}, true); // Placeholder
+                    let lastEventDataForStats = {};
+                    let firstChunkReceived = false;
 
-                                    if (eventData.type === "content") {
-                                        if (!firstChunkReceived) { contentDiv.innerHTML = ''; firstChunkReceived = true; }
-                                        botResponseAccumulator += eventData.delta;
+                    while (true) {
+                        const { value, done: readerDone } = await reader.read();
+                        if (readerDone) {
+                            console.log("Stream reader marked as done. Finalizing content for ID:", currentStreamTargetId);
+                            const targetMessageDiv = document.getElementById(currentStreamTargetId);
+                            if(targetMessageDiv){
+                                const contentDiv = targetMessageDiv.querySelector('.message-text-content');
+                                if(contentDiv){
+                                    if (chatContainer === generalChatMessagesContainer && typeof marked === 'function' && firstChunkReceived) {
+                                        contentDiv.innerHTML = marked.parse(botResponseAccumulator, { breaks: true, gfm: true, sanitize: false });
+                                    } else if (chatContainer === sqlChatMessagesContainer && firstChunkReceived) {
                                         const sqlKeywordsRegex = /\b(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|FROM|WHERE|JOIN|GRANT|REVOKE|WITH|VALUES|TABLE|VIEW|INDEX|DATABASE|PROCEDURE|FUNCTION)\b/i;
-                                        if (chatContainer === sqlChatMessagesContainer && sqlKeywordsRegex.test(botResponseAccumulator)) {
-                                             contentDiv.innerHTML = `<pre><code class="language-sql">${escapeHtml(botResponseAccumulator)}</code></pre>`;
-                                             const codeBlock = contentDiv.querySelector('code.language-sql');
-                                             if(codeBlock && window.Prism) Prism.highlightElement(codeBlock);
-                                        } else { // For general chat, or non-SQL in SQL bot, just append escaped text for now. Markdown render on "done".
-                                            contentDiv.innerHTML = escapeHtml(botResponseAccumulator).replace(/\n/g, '<br>');
+                                        if(sqlKeywordsRegex.test(botResponseAccumulator)){
+                                            contentDiv.innerHTML = `<pre><code class="language-sql">${escapeHtml(botResponseAccumulator)}</code></pre>`;
+                                            const codeBlock = contentDiv.querySelector('code.language-sql');
+                                            if(codeBlock && window.Prism) Prism.highlightElement(codeBlock);
+                                        } else {
+                                             contentDiv.innerHTML = escapeHtml(botResponseAccumulator).replace(/\n/g, '<br>');
                                         }
-                                        if(chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
-                                    } else if (eventData.type === "done" || eventData.type === "usage") {
-                                        lastEventDataForStats = {...lastEventDataForStats, ...eventData};
-                                        if (eventData.type === "done"){
-                                            // Final Markdown rendering for General Chat
-                                            if (chatContainer === generalChatMessagesContainer && typeof marked === 'function' && firstChunkReceived) {
-                                                contentDiv.innerHTML = marked.parse(botResponseAccumulator, { breaks: true, gfm: true });
-                                            }
-                                            targetMessageDiv.dataset.originalText = botResponseAccumulator; // Update dataset with final raw markdown
-
-                                            if(chatHistoryArray && botResponseAccumulator) chatHistoryArray.push({"role": "assistant", "content": botResponseAccumulator});
-
-                                            let currentStats = (chatContainer === sqlChatMessagesContainer) ? sqlBotStats : generalChatStats;
-                                            currentStats.queries++;
-                                            if(lastEventDataForStats.duration_ms) currentStats.totalResponseTimeMs += parseFloat(lastEventDataForStats.duration_ms);
-                                            if(lastEventDataForStats.usage) {
-                                                currentStats.totalTokens += lastEventDataForStats.usage.total_tokens || 0;
-                                                currentStats.totalCost += parseFloat(lastEventDataForStats.usage.query_cost || 0.0);
-                                            }
-                                            updateSessionStatsDisplay();
-                                            if(loadingSpinner) showLoadingSpinner(loadingSpinner, false);
-                                            console.log("Stream processing marked as 'done'.");
-                                            return;
-                                        }
-                                    } else if (eventData.type === "error") {
-                                        contentDiv.innerHTML = `<div class="error-text"><strong>Stream Error:</strong> ${escapeHtml(eventData.delta)}</div>`;
-                                        if(loadingSpinner) showLoadingSpinner(loadingSpinner, false);
-                                        let currentStats = (chatContainer === sqlChatMessagesContainer) ? sqlBotStats : generalChatStats;
-                                        currentStats.queries++;
-                                        if (eventData.duration_ms) currentStats.totalResponseTimeMs += parseFloat(eventData.duration_ms);
-                                        updateSessionStatsDisplay();
-                                        return;
+                                    } else if (!firstChunkReceived) {
+                                         contentDiv.innerHTML = "<em>[No content received from stream.]</em>";
                                     }
+                                    targetMessageDiv.dataset.originalText = botResponseAccumulator;
                                 }
-                            } catch (e) { console.error("Error parsing SSE JSON:", e, jsonDataString); }
+                            }
+                            if (!lastEventDataForStats.type || lastEventDataForStats.type !== 'done') {
+                                let currentStatsObj = (chatContainer === sqlChatMessagesContainer) ? sqlBotStats : generalChatStats;
+                                currentStatsObj.queries++;
+                                if(lastEventDataForStats.duration_ms) currentStatsObj.totalResponseTimeMs += parseFloat(lastEventDataForStats.duration_ms);
+                                if(lastEventDataForStats.usage) {
+                                   currentStatsObj.totalTokens += lastEventDataForStats.usage.total_tokens || 0;
+                                   currentStatsObj.totalCost += parseFloat(lastEventDataForStats.usage.query_cost || 0.0);
+                                }
+                                updateSessionStatsDisplay();
+                            }
+                            break;
+                        }
+
+                        serverSentEventBuffer += decoder.decode(value, { stream: true });
+                        let eventEndIndex;
+                        while ((eventEndIndex = serverSentEventBuffer.indexOf("\n\n")) >= 0) {
+                            const eventString = serverSentEventBuffer.substring(0, eventEndIndex);
+                            serverSentEventBuffer = serverSentEventBuffer.substring(eventEndIndex + 2);
+                            if (eventString.startsWith("data: ")) {
+                                const jsonDataString = eventString.substring(6);
+                                try {
+                                    const eventData = JSON.parse(jsonDataString);
+                                    const targetMessageDiv = document.getElementById(currentStreamTargetId);
+                                    if (targetMessageDiv) {
+                                        const contentDiv = targetMessageDiv.querySelector('.message-text-content');
+                                        if (!contentDiv) continue;
+
+                                        if (eventData.type === "content") {
+                                            if (!firstChunkReceived) { contentDiv.innerHTML = ''; firstChunkReceived = true; }
+                                            botResponseAccumulator += eventData.delta;
+                                            const sqlKeywordsRegex = /\b(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|FROM|WHERE|JOIN|GRANT|REVOKE|WITH|VALUES|TABLE|VIEW|INDEX|DATABASE|PROCEDURE|FUNCTION)\b/i;
+                                            if (chatContainer === sqlChatMessagesContainer && sqlKeywordsRegex.test(botResponseAccumulator)) {
+                                                 contentDiv.innerHTML = `<pre><code class="language-sql">${escapeHtml(botResponseAccumulator)}</code></pre>`;
+                                                 const codeBlock = contentDiv.querySelector('code.language-sql');
+                                                 if(codeBlock && window.Prism) Prism.highlightElement(codeBlock);
+                                            } else if (chatContainer === generalChatMessagesContainer && typeof marked === 'function') {
+                                                contentDiv.innerHTML = marked.parse(botResponseAccumulator, { breaks: true, gfm: true, sanitize: false });
+                                            } else {
+                                                contentDiv.innerHTML = escapeHtml(botResponseAccumulator).replace(/\n/g, '<br>');
+                                            }
+                                            if(chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
+                                        } else if (eventData.type === "done" || eventData.type === "usage") {
+                                            lastEventDataForStats = {...lastEventDataForStats, ...eventData};
+                                            if (eventData.type === "done"){
+                                                if (chatContainer === generalChatMessagesContainer && typeof marked === 'function' && firstChunkReceived) {
+                                                    contentDiv.innerHTML = marked.parse(botResponseAccumulator, { breaks: true, gfm: true, sanitize: false });
+                                                }
+                                                targetMessageDiv.dataset.originalText = botResponseAccumulator;
+
+                                                if(chatContainer === generalChatMessagesContainer && botResponseAccumulator) generalChatHistory.push({"role": "assistant", "content": botResponseAccumulator});
+                                                else if(chatContainer === sqlChatMessagesContainer && botResponseAccumulator) sqlBotChatHistory.push({"role": "assistant", "content": botResponseAccumulator});
+
+                                                let currentStatsObj = (chatContainer === sqlChatMessagesContainer) ? sqlBotStats : generalChatStats;
+                                                currentStatsObj.queries++;
+                                                if(lastEventDataForStats.duration_ms) currentStatsObj.totalResponseTimeMs += parseFloat(lastEventDataForStats.duration_ms);
+                                                if(lastEventDataForStats.usage) {
+                                                    currentStatsObj.totalTokens += lastEventDataForStats.usage.total_tokens || 0;
+                                                    currentStatsObj.totalCost += parseFloat(lastEventDataForStats.usage.query_cost || 0.0);
+                                                }
+                                                updateSessionStatsDisplay();
+                                                if(loadingSpinner) showLoadingSpinner(loadingSpinner, false);
+                                                console.log("Stream processing marked as 'done'.");
+                                                return {success: true, streamEnded: true, finalData: lastEventDataForStats};
+                                            }
+                                        } else if (eventData.type === "error") {
+                                            contentDiv.innerHTML = `<div class="error-text"><strong>Stream Error:</strong> ${escapeHtml(eventData.delta)}</div>`;
+                                            if(loadingSpinner) showLoadingSpinner(loadingSpinner, false);
+                                            let currentStatsObj = (chatContainer === sqlChatMessagesContainer) ? sqlBotStats : generalChatStats;
+                                            currentStatsObj.queries++;
+                                            if (eventData.duration_ms) currentStatsObj.totalResponseTimeMs += parseFloat(eventData.duration_ms);
+                                            updateSessionStatsDisplay();
+                                            return {success: false, error: eventData.delta, streamEnded: true};
+                                        }
+                                    }
+                                } catch (e) { console.error("Error parsing SSE JSON:", e, jsonDataString); }
+                            }
                         }
                     }
-                }
-                // If stream ends without an explicit "done" event being fully processed
-                console.log("Stream reader loop finished. Finalizing content if any (no explicit 'done' event from stream data).");
-                if(botResponseAccumulator && firstChunkReceived) {
-                    if (chatHistoryArray) chatHistoryArray.push({ "role": "assistant", "content": botResponseAccumulator });
-                    const targetMessageDiv = document.getElementById(botMessagePlaceholderId);
-                    if(targetMessageDiv) {
-                        const contentDiv = targetMessageDiv.querySelector('.message-text-content');
-                        if (contentDiv && chatContainer === generalChatMessagesContainer && typeof marked === 'function'){ // Final Markdown render
-                            contentDiv.innerHTML = marked.parse(botResponseAccumulator, { breaks: true, gfm: true });
-                        }
-                        targetMessageDiv.dataset.originalText = botResponseAccumulator;
+                } else { // Non-streaming request
+                    const resp = await fetch(fullUrl, opt);
+                    if (!resp.ok) {
+                        const errorText = await resp.text();
+                        console.error(`HTTP error ${resp.status} for ${fullUrl}: ${errorText.substring(0,500)}`);
+                        throw new Error(`HTTP error ${resp.status}`);
                     }
-                     // Update stats if not already done by a "done" event with full data
-                    if (!lastEventDataForStats.type || lastEventDataForStats.type !== 'done') {
-                        let currentStats = (chatContainer === sqlChatMessagesContainer) ? sqlBotStats : generalChatStats;
-                        currentStats.queries++;
-                        // Duration and usage might be missing or partial if 'done' event wasn't processed with them
-                        if(lastEventDataForStats.duration_ms) currentStats.totalResponseTimeMs += parseFloat(lastEventDataForStats.duration_ms);
-                        if(lastEventDataForStats.usage) {
-                           currentStats.totalTokens += lastEventDataForStats.usage.total_tokens || 0;
-                           currentStats.totalCost += parseFloat(lastEventDataForStats.usage.query_cost || 0.0);
-                        }
-                        updateSessionStatsDisplay();
-                    }
-                } else if (!firstChunkReceived && document.getElementById(botMessagePlaceholderId)) {
-                    const targetMessageDiv = document.getElementById(botMessagePlaceholderId);
-                    if(targetMessageDiv) targetMessageDiv.querySelector('.message-text-content').innerHTML = "<em>[No content received from stream.]</em>";
+                    return await resp.json();
                 }
-            } catch (error) {
-                console.error(`Streaming error for ${endpoint}:`, error);
-                const targetMessageDiv = document.getElementById(botMessagePlaceholderId);
-                if (targetMessageDiv) {
-                    const contentDiv = targetMessageDiv.querySelector('.message-text-content');
-                    if(contentDiv) contentDiv.innerHTML = `<div class="error-text"><strong>Error:</strong> ${escapeHtml(error.message)}</div>`;
-                } else {
-                    addChatMessage(chatContainer, error.message, false, { error: error.message, success: false });
-                }
-            } finally {
+            } catch (e) {
+                console.error(`API request to ${fullUrl} failed:`, e);
                 if(loadingSpinner) showLoadingSpinner(loadingSpinner, false);
+                return {success:false, error:`Request to ${endpoint} failed: ${e.message}`};
             }
         }
 
-        async function handleTestAPI() { /* ... (identical) ... */ apiStatusText.textContent='📡 Testing...'; const res=await makeApiRequestNonStreaming('/test_api'); if(res.inPreview)return; if(res.success){apiStatusText.textContent='✅ Online';addChatMessage(sqlChatMessagesContainer,`API Test OK: ${res.answer}`,false,res);}else{apiStatusText.textContent='❌ Error';addChatMessage(sqlChatMessagesContainer,res.error||'API Test Failed.',false,{error:(res.error||'Unknown test API error'),success:false,duration_ms:res.duration_ms});}}
-        async function handleSyncFromOneDrive() { /* ... (identical) ... */ showOpStatus('Syncing...','info'); if(docPreviewContainer)docPreviewContainer.innerHTML=''; const res=await makeApiRequestNonStreaming('/sync_onedrive_document','POST'); if(res.inPreview)return; if(res.success){addChatMessage(sqlChatMessagesContainer,res.message||'Doc synced.',false,{success:true});}else{addChatMessage(sqlChatMessagesContainer,res.error||'Sync failed.',false,{error:res.error,success:false});} updateDocumentStatusUI(res);}
+        async function handleTestAPI() {
+            apiStatusText.textContent='📡 Testing...';
+            const res = await makeApiRequest('/test_api', 'GET', null, false, sqlChatMessagesContainer, null);  // No specific spinner, general
+            if (res.inPreview) return;
+            if(res.success){
+                apiStatusText.textContent='✅ Online';
+                addChatMessage(sqlChatMessagesContainer, `API Test OK: ${res.answer}`,false, {success: true, model_used: res.model_used, duration_ms: res.duration_ms, usage: res.usage});
+            } else {
+                apiStatusText.textContent='❌ Error';
+                addChatMessage(sqlChatMessagesContainer, res.error||'API Test Failed.',false,{ error: (res.error || 'Unknown test API error'), success: false, duration_ms: res.duration_ms });
+            }
+        }
+
+        async function handleSyncFromOneDrive() {
+            showOpStatus('🔄 Syncing from OneDrive... (running onedrive.py - this may take a moment)', 'info');
+            if(docPreviewContainer) docPreviewContainer.innerHTML = '';
+
+            const result = await makeApiRequest('/sync_onedrive_document', 'POST', null, false, sqlChatMessagesContainer, sqlChatLoadingSpinner);
+            if (result.inPreview) return;
+            if (result.success) {
+                addChatMessage(sqlChatMessagesContainer, result.message || 'Document synced and reloaded.', false, {success: true});
+            } else {
+                addChatMessage(sqlChatMessagesContainer, result.error || 'Failed to sync document from OneDrive.', false, {error: result.error, success: false});
+            }
+            updateDocumentStatusUI(result);
+        }
 
         async function handleAskSQLQuestion() {
             const q = sqlQuestionInputField.value.trim();
             if(!q){showOpStatus('Please enter SQL query request.','error'); return;}
             if(!isDocumentLoaded){showOpStatus('No doc active for SQL Bot.','error');return;}
             addChatMessage(sqlChatMessagesContainer, q, true);
-            // sqlBotChatHistory.push({"role": "user", "content": q}); // Not sending SQL history yet
+            addRecentQuestion(q, 'sql');
+            sqlBotChatHistory.push({"role": "user", "content": q});
             sqlQuestionInputField.value='';
-            await handleStreamedApiRequest('/ask_question', {question:q}, sqlChatMessagesContainer, sqlChatLoadingSpinner, null /* sqlBotChatHistory */);
+            await handleStreamedApiRequest('/stream_sql_query', {messages: sqlBotChatHistory}, sqlChatMessagesContainer, sqlChatLoadingSpinner, sqlBotChatHistory);
         }
 
         async function handleSendGeneralChatMessage() {
@@ -754,13 +808,46 @@
             if (!messageText) { return; }
             addChatMessage(generalChatMessagesContainer, messageText, true);
             generalChatHistory.push({"role": "user", "content": messageText});
+            addRecentQuestion(messageText, 'general');
             generalChatInputField.value = '';
             await handleStreamedApiRequest('/stream_general_chat', {messages: generalChatHistory}, generalChatMessagesContainer, generalChatLoadingSpinner, generalChatHistory);
         }
 
-        function updateDocumentStatusUI(statusResult) { /* ... (identical) ... */ if(statusResult.inPreview&&statusResult.error&&statusResult.error.includes("Preview environment"))return;const c=statusResult.characters||0;const s=statusResult.source||"None";isDocumentLoaded=statusResult.loaded&&c>0;sqlBotStats.documentChars=c;if(docSourceDisplay)docSourceDisplay.textContent=s;if(isDocumentLoaded){if(docPreviewContainer&&statusResult.preview){docPreviewContainer.innerHTML=`<div class="document-preview-area"><strong>📄 Preview (${c.toLocaleString()} chars):</strong><br>${escapeHtml(statusResult.preview)}</div>`;}else if(docPreviewContainer){docPreviewContainer.innerHTML='';}sqlQuestionInputField.disabled=false;sqlAskQuestionButton.disabled=false;}else{if(docPreviewContainer)docPreviewContainer.innerHTML='';sqlQuestionInputField.disabled=true;sqlAskQuestionButton.disabled=true;}updateSessionStatsDisplay();}
-        async function handleCheckStatus() { /* ... (identical, ensure general chat input enable) ... */ showOpStatus('Checking status...','info');const res=await makeApiRequestNonStreaming('/status');if(res.inPreview&&apiStatusText){apiStatusText.textContent='⚠ Preview';if(docSourceDisplay)docSourceDisplay.textContent='Preview Mode';generalChatInputField.disabled=false;generalChatSendButton.disabled=false;sqlQuestionInputField.disabled=true;sqlAskQuestionButton.disabled=true;return;}updateDocumentStatusUI(res);if(res.loaded){showOpStatus(`Status: '${res.source}' active (${(res.characters||0).toLocaleString()} chars).`,'info');}else{showOpStatus('Status: No doc active. Use "Sync & Reload File".','info');}generalChatInputField.disabled=false;generalChatSendButton.disabled=false;}
-        async function handleClearDocument() { /* ... (identical) ... */ addChatMessage(sqlChatMessagesContainer,"The 'Reset' button was removed. Use 'Sync & Reload File'. To reset client stats, refresh the page.",false,{success:true});}
+        function updateDocumentStatusUI(statusResult) {
+            if (statusResult.inPreview && statusResult.error && statusResult.error.includes("Preview environment")) return;
+            const characters = statusResult.characters || 0;
+            const source = statusResult.source || "None";
+            isDocumentLoaded = statusResult.loaded && characters > 0;
+            sqlBotStats.documentChars = characters;
+            if(docSourceDisplay) docSourceDisplay.textContent = source;
+            if(isDocumentLoaded){
+                if(docPreviewContainer&&statusResult.preview){docPreviewContainer.innerHTML=`<div class="document-preview-area"><strong>📄 Preview (${characters.toLocaleString()} chars):</strong><br>${escapeHtml(statusResult.preview)}</div>`;}
+                else if(docPreviewContainer){docPreviewContainer.innerHTML='';}
+                sqlQuestionInputField.disabled=false;sqlAskQuestionButton.disabled=false;
+            }else{
+                if(docPreviewContainer)docPreviewContainer.innerHTML='';
+                sqlQuestionInputField.disabled=true;sqlAskQuestionButton.disabled=true;
+            }
+            updateSessionStatsDisplay();
+        }
+        async function handleCheckStatus() {
+            showOpStatus('🔄 Checking document status...', 'info');
+            const result = await makeApiRequest('/status', 'GET', null, false, null, null);
+            if (result.inPreview && apiStatusText) {
+                apiStatusText.textContent = '⚠ Preview';
+                if(docSourceDisplay) docSourceDisplay.textContent = 'Preview Mode';
+                generalChatInputField.disabled = false; generalChatSendButton.disabled = false; // Enable general chat input
+                sqlQuestionInputField.disabled = true; sqlAskQuestionButton.disabled = true; // Keep SQL disabled
+                return;
+            }
+            updateDocumentStatusUI(result);
+            if(result.loaded){ showOpStatus(`Status: Document '${result.source}' active (${(result.characters || 0).toLocaleString()} chars).`, 'info');}
+            else {showOpStatus('Status: No document active. Use "Sync & Reload File".', 'info');}
+            generalChatInputField.disabled = false; generalChatSendButton.disabled = false;
+        }
+        async function handleClearDocument() {
+             addChatMessage(sqlChatMessagesContainer, "The 'Reset' button was removed. Use 'Sync & Reload File' to refresh the document for the SQL Bot. To reset client-side statistics, please refresh the page.",false,{success:true});
+        }
 
         sqlQuestionInputField.addEventListener('keypress', function(e) { if(e.key==='Enter'&&e.ctrlKey){e.preventDefault();handleAskSQLQuestion();}});
         generalChatInputField.addEventListener('keypress', function(e) { if(e.key==='Enter'&&e.ctrlKey){e.preventDefault();handleSendGeneralChatMessage();}});
@@ -771,6 +858,8 @@
             if(sqlInitialWelcomeTime)sqlInitialWelcomeTime.textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
             if(generalInitialWelcomeTime)generalInitialWelcomeTime.textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
             updateSessionStatsDisplay();
+            renderRecentQuestions(sqlRecentQuestionsList, sqlBotStats.recentQuestions, sqlQuestionInputField);
+            renderRecentQuestions(generalRecentQuestionsList, generalChatStats.recentQuestions, generalChatInputField);
             handleCheckStatus();
             setTimeout(handleTestAPI,1000);
             const firstTabButton = document.querySelector('.tabs-nav .tab-button');
