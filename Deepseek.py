@@ -15,7 +15,7 @@ response = client.chat.completions.create(
 
 # Print the response
 print("Response:", response.choices[0].message.content)
-print("\n" + "="*50)
+print("\n" + "=" * 50)
 
 # Print usage statistics
 if hasattr(response, 'usage') and response.usage:

@@ -13,6 +13,7 @@ import xml.etree.ElementTree as ET
 from urllib.parse import quote, unquote, urlparse, parse_qs
 import hashlib
 
+
 class OneDriveExtractor2025:
     def __init__(self):
         self.session = requests.Session()
@@ -404,6 +405,7 @@ class OneDriveExtractor2025:
 
         return None
 
+
 # Utility function for batch processing
 def process_multiple_urls(urls, output_dir="extracted_docs"):
     """Process multiple OneDrive URLs"""
@@ -412,11 +414,11 @@ def process_multiple_urls(urls, output_dir="extracted_docs"):
     results = []
 
     for i, url in enumerate(urls):
-        print(f"\n{'='*60}")
-        print(f"Processing document {i+1}/{len(urls)}")
-        print(f"{'='*60}")
+        print(f"\n{'=' * 60}")
+        print(f"Processing document {i + 1}/{len(urls)}")
+        print(f"{'=' * 60}")
 
-        output_file = os.path.join(output_dir, f"document_{i+1}.txt")
+        output_file = os.path.join(output_dir, f"document_{i + 1}.txt")
         text = extractor.download_and_extract(url, output_file)
 
         results.append({
@@ -430,6 +432,7 @@ def process_multiple_urls(urls, output_dir="extracted_docs"):
         time.sleep(2)
 
     return results
+
 
 # Main execution
 if __name__ == "__main__":
@@ -447,17 +450,17 @@ if __name__ == "__main__":
     ]
 
     for url_type, url in urls_to_try:
-        print(f"\n{'='*70}")
+        print(f"\n{'=' * 70}")
         print(f"🔄 PROCESSING {url_type}")
-        print(f"{'='*70}")
+        print(f"{'=' * 70}")
 
         output_file = f"extracted_{url_type.lower().replace(' ', '_')}.txt"
         text = extractor.download_and_extract(url, output_file)
 
         if text:
-            print(f"\n{'='*50}")
+            print(f"\n{'=' * 50}")
             print(f"📄 EXTRACTED TEXT PREVIEW ({url_type}):")
-            print(f"{'='*50}")
+            print(f"{'=' * 50}")
             preview = text[:1500] + "..." if len(text) > 1500 else text
             print(preview)
             print(f"\n📊 Total characters: {len(text)}")
