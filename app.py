@@ -7,10 +7,10 @@ import os
 import time
 from datetime import datetime, timezone
 
-print("DEBUG: app.py - Top of file, initial imports successful", file=sys.stderr)
+print("INFO: app.py - Starting application.", file=sys.stderr)
 
 app = Flask(__name__)
-print("DEBUG: app.py - Flask app instance created", file=sys.stderr)
+print("INFO: app.py - Flask app instance created.", file=sys.stderr)
 
 # --- Proxy Configuration Information ---
 # (Proxy comments from previous version remain relevant if you set env vars)
@@ -19,14 +19,15 @@ print("DEBUG: app.py - Flask app instance created", file=sys.stderr)
 class OpenRouterAPI:
     def __init__(self, api_key):
         self.api_key = api_key
-        print(f"DEBUG: OpenRouterAPI __init__ - Initializing with API key ending ...{api_key[-4:] if api_key and len(api_key) > 4 else 'KEY_INVALID_OR_SHORT'}", file=sys.stderr)
+        # Minimal init log, more detailed logging in ask_question
+        print(f"INFO: OpenRouterAPI __init__ - Initializing with API key (status: {'Set' if api_key and not 'YOUR_ACTUAL' in api_key else 'NOT SET or Placeholder'}).", file=sys.stderr)
         self.client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=api_key,
         )
         self.input_cost_per_1m = 0.55
         self.output_cost_per_1m = 2.19
-        print("DEBUG: OpenRouterAPI __init__ - OpenAI client initialized for OpenRouter", file=sys.stderr)
+        # print("DEBUG: OpenRouterAPI __init__ - OpenAI client initialized for OpenRouter", file=sys.stderr)
 
 
     def ask_question(self, question, document_content, user_login="User"):
@@ -39,21 +40,18 @@ class OpenRouterAPI:
         print(f"    Received Document Content Length: {len(document_content)} characters.", file=sys.stderr)
 
         if not document_content or len(document_content) < 10:
-            print(f"    [{current_time_utc_start.strftime('%Y-%m-%d %H:%M:%S')}] CRITICAL WARNING: Document content is very short or empty (Length: {len(document_content)}).", file=sys.stderr)
+            print(f"    [{current_time_utc_start.strftime('%Y-%m-%d %H:%M:%S')}] WARNING: Document content is very short or empty (Length: {len(document_content)}).", file=sys.stderr)
 
         system_prompt_content = "You are a helpful assistant."
         fixed_prefix = "solely generate single sql query to answer user question based on the following explanation:"
         user_prompt_content = f"{fixed_prefix}\nuser question: {question.strip()}\n{document_content}"
 
         print(f"    [{current_time_utc_start.strftime('%Y-%m-%d %H:%M:%S')}] Sending request to OpenRouter API...", file=sys.stderr)
-        print(f"    --- SYSTEM PROMPT CONTENT (for API messages) ---:\n{system_prompt_content}\n    -----------------------------", file=sys.stderr)
-        print(f"    --- USER PROMPT CONTENT (STRUCTURE CHECK for API messages) ---:", file=sys.stderr)
-        print(f"        Fixed Prefix: \"{fixed_prefix}\"", file=sys.stderr)
-        print(f"        User Question: \"{question.strip()}\"", file=sys.stderr)
-        print(f"        Document Content Length Appended: {len(document_content)} characters", file=sys.stderr)
-        print(f"    --- USER PROMPT CONTENT (first 400 chars for API messages) ---:\n{user_prompt_content[:400]}...\n    -----------------------------", file=sys.stderr)
-        if len(user_prompt_content) > 400:
-             print(f"    --- USER PROMPT CONTENT (last 400 chars for API messages if long) ---:\n...{user_prompt_content[-400:]}\n    -----------------------------", file=sys.stderr)
+        # Commenting out full prompt logging unless specifically needed for deep debugging
+        # print(f"    --- SYSTEM PROMPT CONTENT (for API messages) ---:\n{system_prompt_content}\n    -----------------------------", file=sys.stderr)
+        # print(f"    --- USER PROMPT CONTENT (first 400 chars for API messages) ---:\n{user_prompt_content[:400]}...\n    -----------------------------", file=sys.stderr)
+        # if len(user_prompt_content) > 400:
+        #      print(f"    --- USER PROMPT CONTENT (last 400 chars for API messages if long) ---:\n...{user_prompt_content[-400:]}\n    -----------------------------", file=sys.stderr)
         print(f"    Total length of user_prompt_content being sent: {len(user_prompt_content)} characters.", file=sys.stderr)
 
         your_site_url = "http://SQLBOT.pythonanywhere.com"
@@ -90,7 +88,7 @@ class OpenRouterAPI:
                 print(f"    [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] WARNING: API response.choices was empty or message attribute was missing.", file=sys.stderr)
                 answer = "[API Call Successful but no message content in choices]"
 
-            print(f"    [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] API Raw Answer Received: '{answer}'", file=sys.stderr)
+            print(f"    [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] API Raw Answer Received (first 100 chars): '{answer[:100]}...'", file=sys.stderr)
 
             usage_info = {}
             current_query_cost = 0.0
@@ -117,11 +115,11 @@ class OpenRouterAPI:
                 session_total_cost += current_query_cost
                 session_total_response_time_ms += api_duration_ms
             else:
-                print(f"    [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] API response did not contain standard 'usage' information. Cost cannot be calculated.", file=sys.stderr)
+                print(f"    [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] API response did not contain standard 'usage' information. Cost cannot be calculated for this query.", file=sys.stderr)
                 session_total_queries += 1
                 session_total_response_time_ms += api_duration_ms
 
-            print(f"[{current_time_utc_start.strftime('%Y-%m-%d %H:%M:%S')}] --- OpenRouterAPI.ask_question finished successfully ---", file=sys.stderr)
+            # print(f"[{current_time_utc_start.strftime('%Y-%m-%d %H:%M:%S')}] --- OpenRouterAPI.ask_question finished successfully ---", file=sys.stderr) # Can be verbose
             return {
                 "success": True,
                 "answer": answer,
@@ -148,7 +146,7 @@ class OpenRouterAPI:
                     error_text = e.response.text
                     print(f"    API Error Response (not JSON): {error_text}", file=sys.stderr)
                     error_msg += f" (API Response: {error_text[:200]})"
-            print(f"[{current_time_utc_start.strftime('%Y-%m-%d %H:%M:%S')}] --- OpenRouterAPI.ask_question finished with error ---", file=sys.stderr)
+            # print(f"[{current_time_utc_start.strftime('%Y-%m-%d %H:%M:%S')}] --- OpenRouterAPI.ask_question finished with error ---", file=sys.stderr) # Can be verbose
             return {
                 "success": False,
                 "error": f"OpenRouter API Error: {error_msg}",
@@ -157,12 +155,15 @@ class OpenRouterAPI:
             }
 
 # --- Global variables and Document Handling ---
-print("DEBUG: app.py - Setting up global variables", file=sys.stderr)
 OPENROUTER_API_KEY = "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"
-print(f"DEBUG: app.py - OPENROUTER_API_KEY is set (last 4 chars): ...{OPENROUTER_API_KEY[-4:] if OPENROUTER_API_KEY and len(OPENROUTER_API_KEY) > 4 else 'INVALID_OR_SHORT'}", file=sys.stderr)
+if OPENROUTER_API_KEY == "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":
+    print("INFO: app.py - Using the specific OpenRouter API key provided by the user.", file=sys.stderr)
+elif not OPENROUTER_API_KEY or "YOUR_OPENROUTER_API_KEY_HERE" in OPENROUTER_API_KEY :
+    print("CRITICAL WARNING: app.py - OpenRouter API key is NOT SET or is a placeholder!", file=sys.stderr)
+else:
+    print(f"INFO: app.py - OpenRouter API Key configured (ending with ...{OPENROUTER_API_KEY[-4:] if OPENROUTER_API_KEY and len(OPENROUTER_API_KEY) > 4 else '****'}).", file=sys.stderr)
 
 open_router_api = OpenRouterAPI(OPENROUTER_API_KEY)
-print("DEBUG: app.py - OpenRouterAPI instance created", file=sys.stderr)
 
 DEFAULT_DOC_FILENAME = "extracted_edit_url.txt"
 current_document = ""
@@ -173,13 +174,13 @@ source_of_current_document = "None"
 session_total_queries = 0
 session_total_cost = 0.0
 session_total_response_time_ms = 0.0
-print("DEBUG: app.py - Session statistics initialized", file=sys.stderr)
+print("INFO: app.py - Session statistics initialized.", file=sys.stderr)
 
 
 def refresh_local_document_content(is_initial_load=False):
     global initial_default_content, current_document, document_loaded, source_of_current_document, DEFAULT_DOC_FILENAME
     log_ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-    print(f"DEBUG: app.py - refresh_local_document_content called. is_initial_load={is_initial_load}", file=sys.stderr)
+    # print(f"DEBUG: app.py - refresh_local_document_content called. is_initial_load={is_initial_load}", file=sys.stderr) # Less verbose
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         default_doc_path = os.path.join(script_dir, DEFAULT_DOC_FILENAME)
@@ -192,10 +193,10 @@ def refresh_local_document_content(is_initial_load=False):
                 current_document = text_content
                 document_loaded = True
                 source_of_current_document = f"Local File ({DEFAULT_DOC_FILENAME})"
-                print(f"[{log_ts}] Successfully loaded/refreshed local document: {DEFAULT_DOC_FILENAME} ({len(current_document)} chars)", file=sys.stderr)
+                print(f"INFO: [{log_ts}] Loaded/Refreshed local document: {DEFAULT_DOC_FILENAME} ({len(current_document)} chars)", file=sys.stderr)
                 return True
             else:
-                print(f"[{log_ts}] Local document '{DEFAULT_DOC_FILENAME}' found but is empty.", file=sys.stderr)
+                print(f"WARNING: [{log_ts}] Local document '{DEFAULT_DOC_FILENAME}' found but is empty.", file=sys.stderr)
                 if is_initial_load:
                     initial_default_content = ""
                     current_document = ""
@@ -203,7 +204,7 @@ def refresh_local_document_content(is_initial_load=False):
                     source_of_current_document = "None (empty default file)"
                 return False
         else:
-            print(f"[{log_ts}] Local document '{DEFAULT_DOC_FILENAME}' not found.", file=sys.stderr)
+            print(f"WARNING: [{log_ts}] Local document '{DEFAULT_DOC_FILENAME}' not found.", file=sys.stderr)
             if is_initial_load:
                 initial_default_content = ""
                 current_document = ""
@@ -211,7 +212,7 @@ def refresh_local_document_content(is_initial_load=False):
                 source_of_current_document = "None (default file not found)"
             return False
     except Exception as e:
-        print(f"[{log_ts}] Error loading/refreshing local document '{DEFAULT_DOC_FILENAME}': {e}", file=sys.stderr)
+        print(f"ERROR: [{log_ts}] Error loading/refreshing local document '{DEFAULT_DOC_FILENAME}': {e}", file=sys.stderr)
         if is_initial_load:
             initial_default_content = ""
             current_document = ""
@@ -219,38 +220,34 @@ def refresh_local_document_content(is_initial_load=False):
             source_of_current_document = "None (error loading default)"
         return False
 
-print("DEBUG: app.py - Before initial call to refresh_local_document_content", file=sys.stderr)
 refresh_local_document_content(is_initial_load=True)
-print("DEBUG: app.py - After initial call to refresh_local_document_content", file=sys.stderr)
 
 user_login = "bamavadat"
-print(f"DEBUG: app.py - User login set to: {user_login}", file=sys.stderr)
+print(f"INFO: app.py - User login set to: {user_login}", file=sys.stderr)
 
 # --- Flask Routes ---
 @app.route('/')
 def index_route():
-    print(f"DEBUG: app.py - / route accessed at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}. Attempting to render index.html.", file=sys.stderr)
+    # print(f"DEBUG: app.py - / route accessed at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
     try:
-        return render_template('index.html', user_login=user_login) # Restored template rendering
+        return render_template('index.html', user_login=user_login)
     except Exception as e:
         print(f"ERROR in / route (index_route) during render_template: {e}", file=sys.stderr)
-        # Return a more informative error to the browser if render_template fails
         return f"Error rendering template: {str(e)}", 500
-
 
 @app.route('/sync_onedrive_document', methods=['POST'])
 def sync_onedrive_document_route():
-    print(f"DEBUG: app.py - /sync_onedrive_document route accessed at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
+    # print(f"DEBUG: app.py - /sync_onedrive_document route accessed", file=sys.stderr)
     global current_document, document_loaded, source_of_current_document
     script_dir = os.path.dirname(os.path.abspath(__file__))
     onedrive_script_path = os.path.join(script_dir, "onedrive.py")
     log_ts_start = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
     if not os.path.exists(onedrive_script_path):
-        print(f"[{log_ts_start}] Error: onedrive.py script not found at {onedrive_script_path}", file=sys.stderr)
+        print(f"ERROR: [{log_ts_start}] onedrive.py script not found at {onedrive_script_path}", file=sys.stderr)
         return jsonify({"success": False, "error": "onedrive.py script not found."})
     try:
-        print(f"[{log_ts_start}] Attempting to run onedrive.py to update '{DEFAULT_DOC_FILENAME}'...", file=sys.stderr)
+        print(f"INFO: [{log_ts_start}] Attempting to run onedrive.py to update '{DEFAULT_DOC_FILENAME}'...", file=sys.stderr)
         current_env = os.environ.copy()
         process = subprocess.run(
             ['python', onedrive_script_path], capture_output=True, text=True,
@@ -258,7 +255,7 @@ def sync_onedrive_document_route():
         )
         log_ts_end_script = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
         if process.returncode == 0:
-            print(f"[{log_ts_end_script}] onedrive.py executed successfully.", file=sys.stderr)
+            print(f"INFO: [{log_ts_end_script}] onedrive.py executed successfully.", file=sys.stderr)
             if process.stdout: print(f"    onedrive.py stdout: {process.stdout.strip()}", file=sys.stderr)
             if process.stderr: print(f"    onedrive.py stderr (may include normal info): {process.stderr.strip()}", file=sys.stderr)
             if refresh_local_document_content():
@@ -270,20 +267,20 @@ def sync_onedrive_document_route():
                     "source": source_of_current_document,
                     "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
                 })
-            else:
-                return jsonify({"success": False, "error": f"onedrive.py ran, but failed to reload/validate '{DEFAULT_DOC_FILENAME}'."})
-        else:
-            print(f"[{log_ts_end_script}] onedrive.py execution failed. RC: {process.returncode}.", file=sys.stderr)
-            if process.stdout: print(f"    onedrive.py stdout: {process.stdout.strip()}", file=sys.stderr)
-            if process.stderr: print(f"    onedrive.py stderr: {process.stderr.strip()}", file=sys.stderr)
+            else: # refresh_local_document_content failed
+                return jsonify({"success": False, "error": f"onedrive.py ran, but failed to reload/validate '{DEFAULT_DOC_FILENAME}' after sync."})
+        else: # onedrive.py script failed
+            print(f"ERROR: [{log_ts_end_script}] onedrive.py execution failed. RC: {process.returncode}.", file=sys.stderr)
+            if process.stdout: print(f"    onedrive.py stdout (on failure): {process.stdout.strip()}", file=sys.stderr)
+            if process.stderr: print(f"    onedrive.py stderr (on failure): {process.stderr.strip()}", file=sys.stderr)
             return jsonify({"success": False, "error": f"onedrive.py script failed. Error: {process.stderr[:250].strip() if process.stderr else 'No stderr.'}"})
     except Exception as e:
-        print(f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] Error in sync route: {e}", file=sys.stderr)
+        print(f"ERROR: [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] Error in sync route: {e}", file=sys.stderr)
         return jsonify({"success": False, "error": f"Sync error: {str(e)}"})
 
 @app.route('/ask_question', methods=['POST'])
 def ask_question_route():
-    print(f"DEBUG: app.py - /ask_question route accessed at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
+    # print(f"DEBUG: app.py - /ask_question route accessed", file=sys.stderr)
     global current_document, document_loaded
     if not document_loaded or not current_document or not current_document.strip():
         return jsonify({"success": False, "error": "No document loaded or document is empty. Please load or sync a document first."})
@@ -291,13 +288,13 @@ def ask_question_route():
     question_text = data.get('question', '').strip()
     if not question_text: return jsonify({"success": False, "error": "Please provide a question"})
 
-    print(f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] User {user_login} asked: '{question_text}' using document: {source_of_current_document} (Length: {len(current_document)})", file=sys.stderr)
+    print(f"INFO: [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] User {user_login} asked: '{question_text}' using document: {source_of_current_document} (Length: {len(current_document)})", file=sys.stderr)
     result = open_router_api.ask_question(question_text, current_document, user_login)
     return jsonify(result)
 
 @app.route('/status')
 def status_route():
-    print(f"DEBUG: app.py - /status route accessed at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
+    # print(f"DEBUG: app.py - /status route accessed", file=sys.stderr)
     global current_document, document_loaded, source_of_current_document
     ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
     doc_length = len(current_document) if current_document else 0
@@ -314,7 +311,7 @@ def status_route():
 
 @app.route('/clear')
 def clear_route():
-    print(f"DEBUG: app.py - /clear route accessed at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
+    # print(f"DEBUG: app.py - /clear route accessed", file=sys.stderr)
     global current_document, document_loaded, initial_default_content, source_of_current_document, DEFAULT_DOC_FILENAME
     ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
     message = ""
@@ -328,13 +325,13 @@ def clear_route():
         message = f"Document reset to initial cached version of '{DEFAULT_DOC_FILENAME}' ({len(current_document)} chars)."
         preview_text = current_document[:500] + ("..." if len(current_document) > 500 else "")
         char_count = len(current_document)
-        print(f"[{ts}] User {user_login} cleared. Reverted to initial cache of: {DEFAULT_DOC_FILENAME}", file=sys.stderr)
+        print(f"INFO: [{ts}] User {user_login} cleared. Reverted to initial cache of: {DEFAULT_DOC_FILENAME}", file=sys.stderr)
     else:
         current_document = ""
         document_loaded = False
         source_of_current_document = "None"
         message = "Document cleared. No initial cached version was available to restore."
-        print(f"[{ts}] User {user_login} cleared. No initial cache to revert to.", file=sys.stderr)
+        print(f"INFO: [{ts}] User {user_login} cleared. No initial cache to revert to.", file=sys.stderr)
 
     return jsonify({
         "success": True, "message": message, "timestamp": ts,
@@ -346,20 +343,20 @@ def clear_route():
 
 @app.route('/test_api')
 def test_api_route():
-    print(f"DEBUG: app.py - /test_api route accessed at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
+    # print(f"DEBUG: app.py - /test_api route accessed", file=sys.stderr)
     ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
     is_example_key = OPENROUTER_API_KEY == "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"
     generic_placeholder_check = "YOUR_OPENROUTER_API_KEY_HERE"
 
     if generic_placeholder_check in OPENROUTER_API_KEY:
-        print(f"[{ts}] API Test: Using a generic placeholder API key. Test will likely fail authentication.", file=sys.stderr)
+        print(f"WARNING: [{ts}] API Test: Using a generic placeholder API key.", file=sys.stderr)
         return jsonify({"success": False, "error": "OpenRouter API key is a generic placeholder. Cannot test.", "timestamp": ts})
 
     if is_example_key:
-        print(f"[{ts}] API Test: Proceeding with the specific OpenRouter API key provided by user. Ensure it is valid and not rate-limited.", file=sys.stderr)
+        print(f"INFO: [{ts}] API Test: Proceeding with the specific OpenRouter API key provided by user.", file=sys.stderr)
     elif not OPENROUTER_API_KEY:
-         print(f"[{ts}] API Test: OpenRouter API key is not set. Test will fail.", file=sys.stderr)
+         print(f"ERROR: [{ts}] API Test: OpenRouter API key is not set.", file=sys.stderr)
          return jsonify({"success": False, "error": "OpenRouter API key not configured. Cannot test.", "timestamp": ts})
 
     sys_prompt = "You are a helpful AI assistant. Respond with a simple greeting."
@@ -377,11 +374,12 @@ def test_api_route():
         answer = response.choices[0].message.content if response.choices and response.choices[0].message else "[No content in test response]"
         return jsonify({"success": True, "answer": answer, "model_used": "openrouter/auto (or routed)", "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')})
     except Exception as e:
+        print(f"ERROR: [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] OpenRouter API test error: {str(e)}", file=sys.stderr)
         return jsonify({"success": False, "error": f"OpenRouter API test error: {str(e)}", "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')})
 
 @app.route('/api_info')
 def api_info_route():
-    print(f"DEBUG: app.py - /api_info route accessed at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
+    # print(f"DEBUG: app.py - /api_info route accessed", file=sys.stderr)
     global session_total_queries, session_total_cost, session_total_response_time_ms
 
     avg_cost = 0
@@ -407,18 +405,18 @@ def api_info_route():
         }
     })
 
-print("DEBUG: app.py - Flask routes defined", file=sys.stderr)
+print("INFO: app.py - Flask routes defined.", file=sys.stderr)
 
 if __name__ == '__main__':
-    print("DEBUG: app.py - Script is being run directly (e.g., local development)", file=sys.stderr)
+    print("INFO: app.py - Script is being run directly (e.g., local development)", file=sys.stderr)
     templates_dir_local = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
     if not os.path.exists(templates_dir_local):
         os.makedirs(templates_dir_local)
-        print(f"DEBUG: app.py - Created 'templates' directory for local development at {templates_dir_local}", file=sys.stderr)
+        print(f"INFO: app.py - Created 'templates' directory for local development at {templates_dir_local}", file=sys.stderr)
 
     print("="*70, file=sys.stderr)
     print("🚀 DocuQuery SQL Bot with OpenRouter API (Enhanced Stats) - LOCAL DEV MODE", file=sys.stderr)
     print("="*70, file=sys.stderr)
     app.run(debug=True, host='0.0.0.0', port=5000)
 
-print("DEBUG: app.py - End of file reached, application object 'app' should be defined.", file=sys.stderr)
+print("INFO: app.py - End of file reached, application object 'app' should be defined and configured.", file=sys.stderr)
