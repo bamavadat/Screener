@@ -12,14 +12,10 @@ print("INFO: app.py - Starting application.", file=sys.stderr)
 app = Flask(__name__)
 print("INFO: app.py - Flask app instance created.", file=sys.stderr)
 
-# --- Proxy Configuration Information ---
-# (Proxy comments from previous version remain relevant if you set env vars)
-# -----------------------------------------
-
 # --- Global Statistics for Server Session ---
 session_total_queries = 0
 session_total_cost = 0.0
-session_total_response_time_ms = 0.0 # Sum of durations in milliseconds
+session_total_response_time_ms = 0.0
 
 class OpenRouterAPI:
     def __init__(self, api_key):
@@ -43,133 +39,135 @@ class OpenRouterAPI:
         output_cost = (completion_tokens / 1_000_000) * self.output_cost_per_1m
         return input_cost + output_cost
 
-    def ask_question(self, question, document_content, user_login="User"): # Non-streaming for SQL Bot
+    def ask_question_streaming(self, question, document_content, user_login="User"):
         global session_total_queries, session_total_cost, session_total_response_time_ms
 
         current_time_utc_start = datetime.now(timezone.utc)
-        print(f"\n[{current_time_utc_start.strftime('%Y-%m-%d %H:%M:%S')}] --- OpenRouterAPI.ask_question (Non-Streaming) ---", file=sys.stderr)
-        print(f"    User Login: '{user_login}'", file=sys.stderr)
-        print(f"    Received Question: '{question}'", file=sys.stderr)
+        print(f"\n[{current_time_utc_start.strftime('%Y-%m-%d %H:%M:%S')}] --- OpenRouterAPI.ask_question_streaming (SQL Bot) ---", file=sys.stderr)
+        # ... (other initial prints for question, doc length etc.)
 
-        system_prompt_content = "You are a helpful assistant." # Minimal system prompt
+        system_prompt_content = "You are a helpful assistant."
         fixed_prefix = "solely generate single sql query to answer user question based on the following explanation:"
         user_prompt_content = f"{fixed_prefix}\nuser question: {question.strip()}\n{document_content}"
+
         print(f"    Total length of user_prompt_content being sent: {len(user_prompt_content)} characters.", file=sys.stderr)
 
         your_site_url = "http://SQLBOT.pythonanywhere.com"
         your_site_name = "Screener SQL Bot"
         extra_headers = {"HTTP-Referer": your_site_url, "X-Title": your_site_name}
         api_call_start_time = time.perf_counter()
-
-        try:
-            response = self.client.chat.completions.create(
-                extra_headers=extra_headers,
-                model="deepseek/deepseek-r1-0528:free", # Specified model
-                messages=[
-                    {"role": "system", "content": system_prompt_content},
-                    {"role": "user", "content": user_prompt_content}
-                ],
-                stream=False, # Explicitly False for this method
-                max_tokens=164000 # User specified max_tokens
-                # temperature parameter removed
-            )
-            api_call_end_time = time.perf_counter()
-            api_duration_ms = (api_call_end_time - api_call_start_time) * 1000
-
-            answer = response.choices[0].message.content if response.choices and response.choices[0].message else "[API Call Successful but no message content]"
-            print(f"    [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] API Raw Answer Received (first 100 chars): '{answer[:100]}...'", file=sys.stderr)
-
-            usage_info = {}
-            current_query_cost = 0.0
-            if hasattr(response, 'usage') and response.usage:
-                usage = response.usage
-                usage_data_dict = {
-                    "prompt_tokens": usage.prompt_tokens if hasattr(usage, 'prompt_tokens') else 0,
-                    "completion_tokens": getattr(usage, 'completion_tokens', 0),
-                }
-                usage_data_dict["total_tokens"] = usage_data_dict["prompt_tokens"] + usage_data_dict["completion_tokens"]
-                current_query_cost = self._calculate_cost(usage_data_dict)
-                usage_info = {**usage_data_dict, "query_cost": round(current_query_cost, 8)}
-                print(f"    API Usage - Prompt: {usage_info['prompt_tokens']}, Completion: {usage_info['completion_tokens']}, Total: {usage_info['total_tokens']}, Cost: ${current_query_cost:.8f}", file=sys.stderr)
-                session_total_cost += current_query_cost
-            else:
-                print(f"    API response did not contain 'usage'. Cost not calculated.", file=sys.stderr)
-
-            session_total_queries += 1
-            session_total_response_time_ms += api_duration_ms
-
-            return {
-                "success": True, "answer": answer, "model_used": response.model,
-                "usage": usage_info, "duration_ms": round(api_duration_ms, 2),
-                "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-            }
-        except Exception as e:
-            api_call_end_time = time.perf_counter()
-            api_duration_ms = (api_call_end_time - api_call_start_time) * 1000
-            session_total_response_time_ms += api_duration_ms
-            error_msg = str(e)
-            print(f"ERROR in ask_question: {error_msg}", file=sys.stderr)
-            # ... (detailed error logging for e.response if needed)
-            return {
-                "success": False, "error": f"OpenRouter API Error: {error_msg}",
-                "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S'),
-                "duration_ms": round(api_duration_ms, 2)
-            }
-
-    def stream_chat_response(self, messages, user_login="User"): # model parameter removed, will use fixed model
-        """Handles streaming chat completions and tries to extract usage."""
-        global session_total_queries, session_total_cost, session_total_response_time_ms
-
-        current_time_utc_start = datetime.now(timezone.utc)
-        print(f"\n[{current_time_utc_start.strftime('%Y-%m-%d %H:%M:%S')}] --- OpenRouterAPI.stream_chat_response ---", file=sys.stderr)
-        print(f"    User Login: '{user_login}'", file=sys.stderr)
-        print(f"    Model: 'deepseek/deepseek-r1-0528:free'", file=sys.stderr) # Logging the fixed model
-        print(f"    Messages being sent (last user message shown): '{messages[-1]['content'][:100]}...'", file=sys.stderr)
-
-        your_site_url = "http://SQLBOT.pythonanywhere.com"
-        your_site_name = "Screener General Chat"
-        extra_headers = {"HTTP-Referer": your_site_url, "X-Title": your_site_name}
-        api_call_start_time = time.perf_counter()
+        accumulated_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
         try:
             stream = self.client.chat.completions.create(
                 extra_headers=extra_headers,
-                model="deepseek/deepseek-r1-0528:free", # Specified model
-                messages=messages,
-                stream=True, # Explicitly True for this method
-                max_tokens=164000 # User specified max_tokens
-                # temperature parameter removed
+                model="deepseek/deepseek-r1-0528:free",
+                messages=[
+                    {"role": "system", "content": system_prompt_content},
+                    {"role": "user", "content": user_prompt_content}
+                ],
+                stream=True # Ensure streaming
+                # max_tokens parameter removed
             )
 
             for chunk in stream:
                 if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
                     content_delta = chunk.choices[0].delta.content
                     yield {"type": "content", "delta": content_delta}
+                if hasattr(chunk, 'usage') and chunk.usage:
+                    usage = chunk.usage
+                    accumulated_usage["prompt_tokens"] = getattr(usage, 'prompt_tokens', 0) or accumulated_usage["prompt_tokens"]
+                    accumulated_usage["completion_tokens"] = getattr(usage, 'completion_tokens', 0) or accumulated_usage["completion_tokens"]
 
             api_call_end_time = time.perf_counter()
             api_duration_ms = (api_call_end_time - api_call_start_time) * 1000
-            print(f"    [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] Stream ended. API Call Duration: {api_duration_ms:.2f} ms", file=sys.stderr)
+            print(f"    [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] SQL Bot Stream ended. API Call Duration: {api_duration_ms:.2f} ms", file=sys.stderr)
 
             session_total_queries += 1
             session_total_response_time_ms += api_duration_ms
 
-            # Note: Reliable usage/cost for streams is tricky with OpenRouter + OpenAI lib.
-            # OpenRouter usually sends usage in X-OpenRouter-Usage header of the *last* event,
-            # which the SDK might not expose easily. We'll rely on frontend to sum tokens if possible,
-            # or primarily track query count and duration here. Cost can be estimated if token counts
-            # are sent back via a final "usage" type event (which this backend doesn't fabricate now).
-            yield {"type": "done", "duration_ms": round(api_duration_ms, 2), "model_used": "deepseek/deepseek-r1-0528:free"}
+            current_query_cost = 0.0
+            final_usage_info = {}
+            if accumulated_usage["prompt_tokens"] > 0 or accumulated_usage["completion_tokens"] > 0:
+                accumulated_usage["total_tokens"] = accumulated_usage["prompt_tokens"] + accumulated_usage["completion_tokens"]
+                current_query_cost = self._calculate_cost(accumulated_usage)
+                final_usage_info = {**accumulated_usage, "query_cost": round(current_query_cost, 8)}
+                session_total_cost += current_query_cost
+                print(f"    SQL Bot Stream Usage (from chunks) - Prompt: {final_usage_info.get('prompt_tokens',0)}, Completion: {final_usage_info.get('completion_tokens',0)}, Total: {final_usage_info.get('total_tokens',0)}, Cost: ${current_query_cost:.8f}", file=sys.stderr)
+            else:
+                print(f"    SQL Bot Stream response did not yield explicit 'usage' information in chunks.", file=sys.stderr)
+
+            yield {"type": "done", "duration_ms": round(api_duration_ms, 2), "model_used": "deepseek/deepseek-r1-0528:free", "usage": final_usage_info}
 
         except Exception as e:
             api_call_end_time = time.perf_counter()
             api_duration_ms = (api_call_end_time - api_call_start_time) * 1000
-            session_total_response_time_ms += api_duration_ms # Still record time for error
+            session_total_response_time_ms += api_duration_ms
             error_msg = str(e)
-            print(f"    [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] OpenRouter Stream API Error: {error_msg}", file=sys.stderr)
+            print(f"    [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] OpenRouter API Error (ask_question_streaming): {error_msg}", file=sys.stderr)
+            # ... (detailed error logging for e.response)
+            yield {"type": "error", "delta": f"SQL Bot Stream API Error: {error_msg}", "duration_ms": round(api_duration_ms, 2)}
+
+    def stream_chat_response(self, messages, user_login="User"): # For General Chat
+        global session_total_queries, session_total_cost, session_total_response_time_ms
+
+        current_time_utc_start = datetime.now(timezone.utc)
+        print(f"\n[{current_time_utc_start.strftime('%Y-%m-%d %H:%M:%S')}] --- OpenRouterAPI.stream_chat_response (General Chat) ---", file=sys.stderr)
+        # ... (other initial prints)
+
+        your_site_url = "http://SQLBOT.pythonanywhere.com"
+        your_site_name = "Screener General Chat"
+        extra_headers = {"HTTP-Referer": your_site_url, "X-Title": your_site_name}
+        api_call_start_time = time.perf_counter()
+        accumulated_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+        try:
+            stream = self.client.chat.completions.create(
+                extra_headers=extra_headers,
+                model="deepseek/deepseek-r1-0528:free",
+                messages=messages,
+                stream=True
+                # max_tokens parameter removed
+            )
+
+            for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
+                    content_delta = chunk.choices[0].delta.content
+                    yield {"type": "content", "delta": content_delta}
+                if hasattr(chunk, 'usage') and chunk.usage:
+                    usage = chunk.usage
+                    accumulated_usage["prompt_tokens"] = getattr(usage, 'prompt_tokens', 0) or accumulated_usage["prompt_tokens"]
+                    accumulated_usage["completion_tokens"] = getattr(usage, 'completion_tokens', 0) or accumulated_usage["completion_tokens"]
+
+            api_call_end_time = time.perf_counter()
+            api_duration_ms = (api_call_end_time - api_call_start_time) * 1000
+            print(f"    [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] General Chat Stream ended. API Call Duration: {api_duration_ms:.2f} ms", file=sys.stderr)
+
+            session_total_queries += 1
+            session_total_response_time_ms += api_duration_ms
+
+            current_query_cost = 0.0
+            final_usage_info = {}
+            if accumulated_usage["prompt_tokens"] > 0 or accumulated_usage["completion_tokens"] > 0:
+                accumulated_usage["total_tokens"] = accumulated_usage["prompt_tokens"] + accumulated_usage["completion_tokens"]
+                current_query_cost = self._calculate_cost(accumulated_usage)
+                final_usage_info = {**accumulated_usage, "query_cost": round(current_query_cost, 8)}
+                session_total_cost += current_query_cost
+                print(f"    General Chat Stream Usage (from chunks) - Prompt: {final_usage_info.get('prompt_tokens',0)}, Completion: {final_usage_info.get('completion_tokens',0)}, Total: {final_usage_info.get('total_tokens',0)}, Cost: ${current_query_cost:.8f}", file=sys.stderr)
+            else:
+                print(f"    General Chat Stream response did not yield explicit 'usage' information in chunks.", file=sys.stderr)
+
+            yield {"type": "done", "duration_ms": round(api_duration_ms, 2), "model_used": "deepseek/deepseek-r1-0528:free", "usage": final_usage_info}
+
+        except Exception as e:
+            api_call_end_time = time.perf_counter()
+            api_duration_ms = (api_call_end_time - api_call_start_time) * 1000
+            session_total_response_time_ms += api_duration_ms
+            error_msg = str(e)
+            print(f"    [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] OpenRouter Stream API Error (General Chat): {error_msg}", file=sys.stderr)
             yield {"type": "error", "delta": f"Stream API Error: {error_msg}", "duration_ms": round(api_duration_ms, 2)}
 
-
-# Global API Key and instance
+# --- Global API Key and instance ---
 OPENROUTER_API_KEY = "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"
 if OPENROUTER_API_KEY == "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":
     print("INFO: app.py - Using the specific OpenRouter API key provided by the user.", file=sys.stderr)
@@ -179,6 +177,7 @@ else:
     print(f"INFO: app.py - OpenRouter API Key configured (ending with ...{OPENROUTER_API_KEY[-4:] if OPENROUTER_API_KEY and len(OPENROUTER_API_KEY) > 4 else '****'}).", file=sys.stderr)
 open_router_api = OpenRouterAPI(OPENROUTER_API_KEY)
 
+# --- Document Handling ---
 DEFAULT_DOC_FILENAME = "extracted_edit_url.txt"
 current_document = ""
 document_loaded = False
@@ -187,6 +186,7 @@ source_of_current_document = "None"
 print("INFO: app.py - Document handling variables initialized.", file=sys.stderr)
 
 def refresh_local_document_content(is_initial_load=False):
+    # ... (this function remains IDENTICAL to your previous correct version) ...
     global initial_default_content, current_document, document_loaded, source_of_current_document, DEFAULT_DOC_FILENAME
     log_ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
     try:
@@ -242,7 +242,8 @@ def sync_onedrive_document_route():
         current_env = os.environ.copy()
         process = subprocess.run(
             ['python', onedrive_script_path], capture_output=True, text=True,
-            check=False, timeout=120, env=current_env
+            check=False, timeout=120, env=current_env,
+            encoding='utf-8', errors='replace' # Added encoding and error handling
         )
         log_ts_end_script = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
         if process.returncode == 0:
@@ -269,18 +270,30 @@ def sync_onedrive_document_route():
         print(f"ERROR: [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] Error in sync route: {e}", file=sys.stderr)
         return jsonify({"success": False, "error": f"Sync error: {str(e)}"})
 
-@app.route('/ask_question', methods=['POST']) # For SQL Bot (non-streaming)
+@app.route('/ask_question', methods=['POST']) # For SQL Bot - NOW STREAMING
 def ask_question_route():
     global current_document, document_loaded
     if not document_loaded or not current_document or not current_document.strip():
-        return jsonify({"success": False, "error": "No document loaded or document is empty."})
+        return jsonify({"error": "No document loaded or document is empty."}), 400
     data = request.get_json()
     question_text = data.get('question', '').strip()
-    if not question_text: return jsonify({"success": False, "error": "Please provide a question"})
+    if not question_text:
+        return jsonify({"error": "Please provide a question"}), 400
 
-    print(f"INFO: [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] User {user_login} asked SQL Bot: '{question_text}'", file=sys.stderr)
-    result = open_router_api.ask_question(question_text, current_document, user_login)
-    return jsonify(result)
+    print(f"INFO: [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] User {user_login} asked SQL Bot (streaming): '{question_text}'", file=sys.stderr)
+
+    def generate_stream_sql():
+        try:
+            for chunk_data in open_router_api.ask_question_streaming(question_text, current_document, user_login):
+                yield f"data: {json.dumps(chunk_data)}\n\n"
+                time.sleep(0.01)
+        except Exception as e:
+            print(f"ERROR in generate_stream_sql: {e}", file=sys.stderr)
+            error_payload = {"type": "error", "delta": f"SQL Bot Stream generation error: {str(e)}"}
+            yield f"data: {json.dumps(error_payload)}\n\n"
+
+    return Response(stream_with_context(generate_stream_sql()), mimetype='text/event-stream')
+
 
 @app.route('/stream_general_chat', methods=['POST'])
 def stream_general_chat_route():
@@ -291,14 +304,9 @@ def stream_general_chat_route():
     if not messages:
         return jsonify({"error": "No messages provided"}), 400
 
-    # Use a simple system prompt for general chat, or pass one from client if needed
-    # For now, assuming client sends full message history including any system prompt.
-    # If not, you might want to prepend a default system message here.
-    # e.g., prepended_messages = [{"role": "system", "content": "You are a helpful general assistant."}] + messages
-
-    def generate_stream():
+    def generate_stream_general():
         try:
-            for chunk_data in open_router_api.stream_chat_response(messages, user_login=user_login): # Model fixed in method
+            for chunk_data in open_router_api.stream_chat_response(messages, user_login=user_login):
                 yield f"data: {json.dumps(chunk_data)}\n\n"
                 time.sleep(0.01)
         except Exception as e:
@@ -306,7 +314,7 @@ def stream_general_chat_route():
             error_payload = {"type": "error", "delta": f"Stream generation error: {str(e)}"}
             yield f"data: {json.dumps(error_payload)}\n\n"
 
-    return Response(stream_with_context(generate_stream()), mimetype='text/event-stream')
+    return Response(stream_with_context(generate_stream_general()), mimetype='text/event-stream')
 
 @app.route('/status')
 def status_route():
@@ -357,7 +365,7 @@ def test_api_route():
     try:
         response = open_router_api.client.chat.completions.create(
             model="openrouter/auto", messages=[{"role": "system", "content": sys_prompt}, {"role": "user", "content": usr_prompt}],
-            temperature=0.5, max_tokens=50,
+            max_tokens=50,
             extra_headers={ "HTTP-Referer": "http://SQLBOT.pythonanywhere.com/test_api", "X-Title": "Screener Bot API Test" }
         )
         answer = response.choices[0].message.content if response.choices and response.choices[0].message else "[No content]"
@@ -396,9 +404,7 @@ if __name__ == '__main__':
     print("="*70, file=sys.stderr)
     print("🚀 DocuQuery SQL Bot with OpenRouter API (Enhanced Stats) - LOCAL DEV MODE", file=sys.stderr)
     print(f"📅 Current UTC Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
-    print(f"👤 User Login: {user_login}", file=sys.stderr)
-    print(f"🤖 AI Model: deepseek/deepseek-r1-0528:free (via OpenRouter)", file=sys.stderr)
-    # API Key status printout...
+    # ... (other local dev startup messages as before)
     print("="*70, file=sys.stderr)
     app.run(debug=True, host='0.0.0.0', port=5000)
 
