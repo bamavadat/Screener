@@ -73,8 +73,7 @@ class OpenRouterAPI:
                     {"role": "user", "content": user_prompt_content}
                 ],
                 stream=False,
-                temperature=0.2,
-                max_tokens=2000
+                max_tokens=164000
             )
 
             api_call_end_time = time.perf_counter()
