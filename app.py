@@ -93,7 +93,7 @@ class OpenRouterAPI:
                 current_query_cost = self._calculate_cost(accumulated_usage)
                 final_usage_info = {**accumulated_usage, "query_cost": round(current_query_cost, 8)}
                 session_total_cost += current_query_cost
-                print(f"    SQL Bot Stream Usage (from chunks) - Prompt: {final_usage_info.get('prompt_tokens',0)}, Completion: {final_usage_info.get('completion_tokens',0)}, Total: {final_usage_info.get('total_tokens',0)}, Cost: ${current_query_cost:.8f}", file=sys.stderr)
+                print(f"    SQL Bot Stream Usage (from chunks) - Prompt: {final_usage_info.get('prompt_tokens',0)}, Completion: {final_usage_info.get('completion_tokens',0)}, Total: {final_usage_info.get('total_tokens',0)}, Query Cost: ${final_usage_info.get('query_cost',0):.8f}", file=sys.stderr)
             else:
                 print(f"    SQL Bot Stream response did not yield explicit 'usage' information in chunks.", file=sys.stderr)
 
@@ -153,7 +153,7 @@ class OpenRouterAPI:
                 current_query_cost = self._calculate_cost(accumulated_usage)
                 final_usage_info = {**accumulated_usage, "query_cost": round(current_query_cost, 8)}
                 session_total_cost += current_query_cost
-                print(f"    General Chat Stream Usage (from chunks) - Prompt: {final_usage_info.get('prompt_tokens',0)}, Completion: {final_usage_info.get('completion_tokens',0)}, Total: {final_usage_info.get('total_tokens',0)}, Cost: ${current_query_cost:.8f}", file=sys.stderr)
+                print(f"    General Chat Stream Usage (from chunks) - Prompt: {final_usage_info.get('prompt_tokens',0)}, Completion: {final_usage_info.get('completion_tokens',0)}, Total: {final_usage_info.get('total_tokens',0)}, Query Cost: ${final_usage_info.get('query_cost',0):.8f}", file=sys.stderr)
             else:
                 print(f"    General Chat Stream response did not yield explicit 'usage' information in chunks.", file=sys.stderr)
 
