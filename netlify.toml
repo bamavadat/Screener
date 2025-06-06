@@ -1,16 +1,6 @@
 [build]
-  command = "pip install -r requirements.txt"
+  command = "echo 'Static deployment'"
   publish = "templates"
-
-# Direct deployment without functions
-[[plugins]]
-  package = "@netlify/plugin-python"
-
-# API routes handled by your app.py directly
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/app/:splat"
-  status = 200
 
 [[redirects]]
   from = "/*"
