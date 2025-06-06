@@ -43,15 +43,16 @@ class OpenRouterAPI:
         output_cost = (completion_tokens / 1_000_000) * self.output_cost_per_1m
         return input_cost + output_cost
 
-    def _process_stream(self, stream_iterator):
-        """Helper function to process a stream and capture usage."""
+    def _process_stream(self, stream_iterator, bot_type="General"):
         global session_total_queries, session_total_cost, session_total_response_time_ms
-
         api_call_start_time = time.perf_counter()
         accumulated_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        model_used_from_stream = "deepseek/deepseek-r1-0528:free"
 
         try:
             for chunk in stream_iterator:
+                if hasattr(chunk, 'model') and chunk.model:
+                    model_used_from_stream = chunk.model
                 if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
                     content_delta = chunk.choices[0].delta.content
                     yield {"type": "content", "delta": content_delta}
@@ -62,7 +63,7 @@ class OpenRouterAPI:
 
             api_call_end_time = time.perf_counter()
             api_duration_ms = (api_call_end_time - api_call_start_time) * 1000
-            print(f"    [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] Stream ended. API Call Duration: {api_duration_ms:.2f} ms", file=sys.stderr)
+            print(f"    [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] {bot_type} Stream ended. API Call Duration: {api_duration_ms:.2f} ms", file=sys.stderr)
 
             session_total_queries += 1
             session_total_response_time_ms += api_duration_ms
@@ -73,49 +74,46 @@ class OpenRouterAPI:
                 current_query_cost = self._calculate_cost(accumulated_usage)
                 final_usage_info = {**accumulated_usage, "query_cost": round(current_query_cost, 8)}
                 session_total_cost += current_query_cost
-                print(f"    Stream Usage (from chunks) - Prompt: {final_usage_info.get('prompt_tokens', 0)}, Completion: {final_usage_info.get('completion_tokens', 0)}, Cost: ${current_query_cost:.8f}", file=sys.stderr)
+                print(f"    {bot_type} Stream Usage (from potential final chunk data) - Prompt: {final_usage_info.get('prompt_tokens', 0)}, Completion: {final_usage_info.get('completion_tokens', 0)}, Cost: ${current_query_cost:.8f}", file=sys.stderr)
             else:
-                print(f"    Stream response did not yield 'usage' information.", file=sys.stderr)
+                print(f"    {bot_type} Stream response did not yield explicit 'usage' information in chunks. Cost not precisely calculated from stream data.", file=sys.stderr)
 
-            yield {"type": "done", "duration_ms": round(api_duration_ms, 2), "usage": final_usage_info}
+            yield {"type": "done", "duration_ms": round(api_duration_ms, 2), "usage": final_usage_info, "model_used": model_used_from_stream}
 
         except Exception as e:
             api_call_end_time = time.perf_counter()
             api_duration_ms = (api_call_end_time - api_call_start_time) * 1000
             session_total_response_time_ms += api_duration_ms
             error_msg = str(e)
-            print(f"    [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] OpenRouter Stream API Error: {error_msg}", file=sys.stderr)
-            yield {"type": "error", "delta": f"Stream API Error: {error_msg}", "duration_ms": round(api_duration_ms, 2)}
+            print(f"    [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] OpenRouter Stream API Error ({bot_type}): {error_msg}", file=sys.stderr)
+            yield {"type": "error", "delta": f"Stream API Error ({bot_type}): {error_msg}", "duration_ms": round(api_duration_ms, 2)}
 
     def stream_sql_query(self, messages, document_content, user_login="User"):
         current_time_utc_start = datetime.now(timezone.utc)
         print(f"\n[{current_time_utc_start.strftime('%Y-%m-%d %H:%M:%S')}] --- OpenRouterAPI.stream_sql_query ---", file=sys.stderr)
 
         fixed_prefix = "solely generate single sql query to answer user question based on the following explanation:"
-
-        # New System Prompt that includes the full document context
         system_prompt_content = (
             f"You are a helpful assistant that generates SQL Server queries. "
             f"{fixed_prefix}\n\n"
             f"Use the following document context to answer all subsequent user questions:\n\n"
             f"--- DOCUMENT CONTEXT ---\n{document_content}\n--- END DOCUMENT CONTEXT ---"
         )
-
-        # The messages from the client should now not include the context, only the question history.
         api_messages = [{"role": "system", "content": system_prompt_content}] + messages
 
-        your_site_url = "http://SQLBOT.pythonanywhere.com"
-        your_site_name = "Screener SQL Bot"
+        your_site_url = "https://screener-rho.vercel.app/"
+        your_site_name = "Screener SQL Bot (Vercel)"
         extra_headers = {"HTTP-Referer": your_site_url, "X-Title": your_site_name}
+
+        print(f"    Total length of user_prompt_content (derived from messages & doc): Approx {len(document_content) + len(messages[-1]['content']) if messages else len(document_content)} chars.", file=sys.stderr)
 
         stream_iterator = self.client.chat.completions.create(
             extra_headers=extra_headers,
             model="deepseek/deepseek-r1-0528:free",
             messages=api_messages,
-            stream=True,
-            max_tokens=4000
+            stream=True
         )
-        yield from self._process_stream(stream_iterator)
+        yield from self._process_stream(stream_iterator, bot_type="SQL Bot")
 
     def stream_chat_response(self, messages, user_login="User"):
         current_time_utc_start = datetime.now(timezone.utc)
@@ -124,23 +122,22 @@ class OpenRouterAPI:
         system_prompt_content = "You are a helpful assistant."
         api_messages = [{"role": "system", "content": system_prompt_content}] + messages
 
-        your_site_url = "http://SQLBOT.pythonanywhere.com"
-        your_site_name = "Screener General Chat"
+        your_site_url = "https://screener-rho.vercel.app/"
+        your_site_name = "Screener General Chat (Vercel)"
         extra_headers = {"HTTP-Referer": your_site_url, "X-Title": your_site_name}
+
+        if messages: print(f"    Messages being sent (last user message shown): '{messages[-1]['content'][:100]}...'", file=sys.stderr)
 
         stream_iterator = self.client.chat.completions.create(
             extra_headers=extra_headers,
             model="deepseek/deepseek-r1-0528:free",
             messages=api_messages,
-            stream=True,
-            max_tokens=4000
+            stream=True
         )
-        yield from self._process_stream(stream_iterator)
+        yield from self._process_stream(stream_iterator, bot_type="General Chat")
 
-
-# --- Global variables and Document Handling ---
+# --- Global API Key and instance ---
 OPENROUTER_API_KEY = "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"
-# ... (API key checks and open_router_api instantiation as before) ...
 if OPENROUTER_API_KEY == "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":
     print("INFO: app.py - Using the specific OpenRouter API key provided by the user.", file=sys.stderr)
 elif not OPENROUTER_API_KEY or "YOUR_OPENROUTER_API_KEY_HERE" in OPENROUTER_API_KEY :
@@ -148,7 +145,6 @@ elif not OPENROUTER_API_KEY or "YOUR_OPENROUTER_API_KEY_HERE" in OPENROUTER_API_
 else:
     print(f"INFO: app.py - OpenRouter API Key configured (ending with ...{OPENROUTER_API_KEY[-4:] if OPENROUTER_API_KEY and len(OPENROUTER_API_KEY) > 4 else '****'}).", file=sys.stderr)
 open_router_api = OpenRouterAPI(OPENROUTER_API_KEY)
-
 
 DEFAULT_DOC_FILENAME = "extracted_edit_url.txt"
 current_document = ""
@@ -158,12 +154,12 @@ source_of_current_document = "None"
 print("INFO: app.py - Document handling variables initialized.", file=sys.stderr)
 
 def refresh_local_document_content(is_initial_load=False):
-    # ... (this function remains identical to your previous correct version) ...
     global initial_default_content, current_document, document_loaded, source_of_current_document, DEFAULT_DOC_FILENAME
     log_ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         default_doc_path = os.path.join(script_dir, DEFAULT_DOC_FILENAME)
+
         if os.path.exists(default_doc_path):
             with open(default_doc_path, "r", encoding="utf-8") as f:
                 text_content = f.read()
@@ -179,7 +175,7 @@ def refresh_local_document_content(is_initial_load=False):
                 if is_initial_load: initial_default_content = ""; current_document = ""; document_loaded = False; source_of_current_document = "None (empty default)"
                 return False
         else:
-            print(f"WARNING: [{log_ts}] Local doc '{DEFAULT_DOC_FILENAME}' not found.", file=sys.stderr)
+            print(f"WARNING: [{log_ts}] Local doc '{DEFAULT_DOC_FILENAME}' not found at {default_doc_path}.", file=sys.stderr)
             if is_initial_load: initial_default_content = ""; current_document = ""; document_loaded = False; source_of_current_document = "None (no default file)"
             return False
     except Exception as e:
@@ -202,26 +198,34 @@ def index_route():
 
 @app.route('/sync_onedrive_document', methods=['POST'])
 def sync_onedrive_document_route():
-    # ... (This route remains identical to your previous correct version) ...
     global current_document, document_loaded, source_of_current_document
     script_dir = os.path.dirname(os.path.abspath(__file__))
     onedrive_script_path = os.path.join(script_dir, "onedrive.py")
     log_ts_start = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+
     if not os.path.exists(onedrive_script_path):
         print(f"ERROR: [{log_ts_start}] onedrive.py script not found at {onedrive_script_path}", file=sys.stderr)
         return jsonify({"success": False, "error": "onedrive.py script not found."})
     try:
         print(f"INFO: [{log_ts_start}] Attempting to run onedrive.py to update '{DEFAULT_DOC_FILENAME}'...", file=sys.stderr)
         current_env = os.environ.copy()
+        # Ensure the child Python process uses UTF-8 for its standard streams, especially on Windows
+        current_env['PYTHONIOENCODING'] = 'utf-8'
         process = subprocess.run(
-            ['python', onedrive_script_path], capture_output=True, text=True,
-            check=False, timeout=120, env=current_env
+            ['python', onedrive_script_path],
+            capture_output=True,
+            text=True,
+            encoding='utf-8', # How parent should decode child's output
+            errors='replace',   # Replace undecodable characters instead of raising error
+            check=False,
+            timeout=120,
+            env=current_env
         )
         log_ts_end_script = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
         if process.returncode == 0:
             print(f"INFO: [{log_ts_end_script}] onedrive.py executed successfully.", file=sys.stderr)
             if process.stdout: print(f"    onedrive.py stdout: {process.stdout.strip()}", file=sys.stderr)
-            if process.stderr: print(f"    onedrive.py stderr: {process.stderr.strip()}", file=sys.stderr)
+            if process.stderr: print(f"    onedrive.py stderr: {process.stderr.strip()}", file=sys.stderr) # Stderr might contain warnings or info
             if refresh_local_document_content():
                 return jsonify({
                     "success": True,
@@ -231,9 +235,9 @@ def sync_onedrive_document_route():
                     "source": source_of_current_document,
                     "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
                 })
-            else:
-                return jsonify({"success": False, "error": f"onedrive.py ran, but failed to reload/validate '{DEFAULT_DOC_FILENAME}'."})
-        else:
+            else: # refresh_local_document_content failed
+                return jsonify({"success": False, "error": f"onedrive.py ran, but failed to reload/validate '{DEFAULT_DOC_FILENAME}' after sync."})
+        else: # onedrive.py script failed
             print(f"ERROR: [{log_ts_end_script}] onedrive.py execution failed. RC: {process.returncode}.", file=sys.stderr)
             if process.stdout: print(f"    onedrive.py stdout (on failure): {process.stdout.strip()}", file=sys.stderr)
             if process.stderr: print(f"    onedrive.py stderr (on failure): {process.stderr.strip()}", file=sys.stderr)
@@ -242,34 +246,32 @@ def sync_onedrive_document_route():
         print(f"ERROR: [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] Error in sync route: {e}", file=sys.stderr)
         return jsonify({"success": False, "error": f"Sync error: {str(e)}"})
 
-@app.route('/stream_sql_query', methods=['POST']) # RENAMED from ask_question_route
+@app.route('/stream_sql_query', methods=['POST'])
 def stream_sql_query_route():
     global current_document, document_loaded
     if not document_loaded or not current_document or not current_document.strip():
         return jsonify({"error": "No document loaded or document is empty."}), 400
     data = request.get_json()
-    messages = data.get('messages') # Expecting full message history
+    messages = data.get('messages')
     if not messages:
-        return jsonify({"error": "Please provide a question (in messages format)"}), 400
+        return jsonify({"error": "Please provide user question history (in messages format)"}), 400
 
-    print(f"INFO: [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] User {user_login} asked SQL Bot (streaming): '{messages[-1]['content']}'", file=sys.stderr)
+    print(f"INFO: [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] User {user_login} asked SQL Bot (streaming): '{messages[-1]['content'] if messages else 'N/A'}'", file=sys.stderr)
 
-    def generate_stream():
+    def generate_stream_sql():
         try:
             for chunk_data in open_router_api.stream_sql_query(messages, current_document, user_login):
                 yield f"data: {json.dumps(chunk_data)}\n\n"
                 time.sleep(0.01)
         except Exception as e:
-            print(f"ERROR in stream_sql_query generate_stream: {e}", file=sys.stderr)
+            print(f"ERROR in generate_stream_sql: {e}", file=sys.stderr)
             error_payload = {"type": "error", "delta": f"SQL Bot Stream generation error: {str(e)}"}
             yield f"data: {json.dumps(error_payload)}\n\n"
 
-    return Response(stream_with_context(generate_stream()), mimetype='text/event-stream')
-
+    return Response(stream_with_context(generate_stream_sql()), mimetype='text/event-stream')
 
 @app.route('/stream_general_chat', methods=['POST'])
 def stream_general_chat_route():
-    # This route remains largely unchanged, but now calls the unified _process_stream helper
     print(f"INFO: app.py - /stream_general_chat route accessed at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
     data = request.get_json()
     messages = data.get('messages')
@@ -277,7 +279,7 @@ def stream_general_chat_route():
     if not messages:
         return jsonify({"error": "No messages provided"}), 400
 
-    def generate_stream():
+    def generate_stream_general():
         try:
             for chunk_data in open_router_api.stream_chat_response(messages, user_login=user_login):
                 yield f"data: {json.dumps(chunk_data)}\n\n"
@@ -287,11 +289,10 @@ def stream_general_chat_route():
             error_payload = {"type": "error", "delta": f"Stream generation error: {str(e)}"}
             yield f"data: {json.dumps(error_payload)}\n\n"
 
-    return Response(stream_with_context(generate_stream()), mimetype='text/event-stream')
+    return Response(stream_with_context(generate_stream_general()), mimetype='text/event-stream')
 
 @app.route('/status')
 def status_route():
-    # ... (This route remains identical to your previous correct version) ...
     global current_document, document_loaded, source_of_current_document
     ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
     doc_length = len(current_document) if current_document else 0
@@ -305,7 +306,6 @@ def status_route():
 
 @app.route('/clear')
 def clear_route():
-    # ... (This route remains identical - "Reset to Initial" for default doc) ...
     global current_document, document_loaded, initial_default_content, source_of_current_document, DEFAULT_DOC_FILENAME
     ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
     message = ""
@@ -327,7 +327,6 @@ def clear_route():
 
 @app.route('/test_api')
 def test_api_route():
-    # ... (This route remains identical) ...
     ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
     is_example_key = OPENROUTER_API_KEY == "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"
     generic_placeholder_check = "YOUR_OPENROUTER_API_KEY_HERE"
@@ -336,12 +335,13 @@ def test_api_route():
         return jsonify({"success": False, "error": "OpenRouter API key placeholder. Cannot test.", "timestamp": ts})
     if is_example_key: print(f"INFO: [{ts}] API Test: Using specific user-provided OpenRouter API key.", file=sys.stderr)
     elif not OPENROUTER_API_KEY: print(f"ERROR: [{ts}] API Test: OpenRouter API key not set.", file=sys.stderr); return jsonify({"success": False, "error": "OpenRouter API key not configured.", "timestamp": ts})
+
     sys_prompt = "You are a helpful AI assistant. Respond: 'Test API Online'"; usr_prompt = "Hello AI, connectivity test."
     try:
         response = open_router_api.client.chat.completions.create(
             model="openrouter/auto", messages=[{"role": "system", "content": sys_prompt}, {"role": "user", "content": usr_prompt}],
             max_tokens=50,
-            extra_headers={ "HTTP-Referer": "http://SQLBOT.pythonanywhere.com/test_api", "X-Title": "Screener Bot API Test" }
+            extra_headers={ "HTTP-Referer": "https://screener-rho.vercel.app/test_api", "X-Title": "Screener Bot API Test (Vercel)" }
         )
         answer = response.choices[0].message.content if response.choices and response.choices[0].message else "[No content]"
         return jsonify({"success": True, "answer": answer, "model_used": "openrouter/auto (or routed)", "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')})
@@ -349,10 +349,8 @@ def test_api_route():
         print(f"ERROR: [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] API test error: {str(e)}", file=sys.stderr)
         return jsonify({"success": False, "error": f"API test error: {str(e)}", "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')})
 
-
 @app.route('/api_info')
 def api_info_route():
-    # ... (This route remains identical, showing server session stats) ...
     global session_total_queries, session_total_cost, session_total_response_time_ms
     avg_cost = (session_total_cost / session_total_queries) if session_total_queries > 0 else 0
     avg_response_time_ms = (session_total_response_time_ms / session_total_queries) if session_total_queries > 0 else 0
@@ -372,15 +370,16 @@ def api_info_route():
 print("INFO: app.py - Flask routes defined.", file=sys.stderr)
 
 if __name__ == '__main__':
-    # ... (This block for local dev remains identical) ...
     print("INFO: app.py - Script is being run directly (e.g., local development)", file=sys.stderr)
     templates_dir_local = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
     if not os.path.exists(templates_dir_local):
         os.makedirs(templates_dir_local)
         print(f"INFO: app.py - Created 'templates' directory for local development at {templates_dir_local}", file=sys.stderr)
+
     print("="*70, file=sys.stderr)
     print("🚀 DocuQuery SQL Bot with OpenRouter API (Enhanced Stats) - LOCAL DEV MODE", file=sys.stderr)
     print(f"📅 Current UTC Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
+    print(f"🌐 Expected Deployed URL (Example for Referer): https://screener-rho.vercel.app/", file=sys.stderr)
     print("="*70, file=sys.stderr)
     app.run(debug=True, host='0.0.0.0', port=5000)
 
