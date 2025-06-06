@@ -1,17 +1,13 @@
-import requests
-import re
-import urllib.parse
 import json
-import time
-import base64
-from pathlib import Path
-import tempfile
 import os
-from io import BytesIO
-import zipfile
+import re
+import time
 import xml.etree.ElementTree as ET
-from urllib.parse import quote, unquote, urlparse, parse_qs
-import hashlib
+import zipfile
+from io import BytesIO
+from urllib.parse import urlparse, parse_qs
+
+import requests
 
 
 class OneDriveExtractor2025:

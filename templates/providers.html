@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Provider Management - Screener Bot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            margin: -30px -30px 30px -30px;
+        }
+
+        .nav-tab {
+            padding: 15px 25px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            color: #6c757d;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: #2c3e50;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .nav-tab:hover {
+            background: #e9ecef;
+        }
+
+        .provider-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .provider-card:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .provider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .provider-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .provider-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .detail-item {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .detail-label {
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .api-key-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .api-key-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-family: monospace;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+        }
+
+        .btn-test {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-test:hover {
+            background: #218838;
+        }
+
+        .stats-section {
+            background: #e8f4ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .add-provider-section {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .iframe-container {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🔧 Provider Management Dashboard</h1>
+        <p>Current User: {{ user_login }} | Current Time: <span id="current-time"></span></p>
+    </div>
+
+    <div class="content">
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('providers', this)">🔌 Providers</button>
+            <button class="nav-tab" onclick="showTab('main-app', this)">🏠 Main App</button>
+        </div>
+
+        <div id="providers-tab">
+            <div id="alerts"></div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Loading provider information...</p>
+            </div>
+
+            <!-- Global Statistics -->
+            <div class="stats-section" id="global-stats" style="display: none;">
+                <h3>📊 Global Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="total-queries">0</div>
+                        <div class="stat-label">Total Queries</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="total-cost">$0.00</div>
+                        <div class="stat-label">Total Cost</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="avg-response">0ms</div>
+                        <div class="stat-label">Avg Response</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="active-providers">0</div>
+                        <div class="stat-label">Active Providers</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Providers List -->
+            <div id="providers-list"></div>
+
+            <!-- Add New Provider -->
+            <div class="add-provider-section">
+                <h3>➕ Add New Provider</h3>
+                <div style="margin-bottom: 15px; font-size: 0.9em; color: #856404;">
+                    <strong>Popular Free Options:</strong><br>
+                    • SiliconFlow: https://api.siliconflow.cn/v1 | Model: deepseek-ai/DeepSeek-R1-0528<br>
+                    • DeepSeek Direct: https://api.deepseek.com | Model: deepseek-reasoner<br>
+                    • Groq: https://api.groq.com/openai/v1 | Model: llama-3.1-70b-versatile
+                </div>
+                <form id="add-provider-form">
+                    <div class="form-group">
+                        <label class="form-label">Provider Name:</label>
+                        <input class="form-input" name="name" placeholder="e.g., My Custom Provider" required
+                               type="text">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">API Key:</label>
+                        <input class="form-input" name="api_key" placeholder="Your API key" required type="password">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Base URL:</label>
+                        <input class="form-input" name="base_url" placeholder="https://api.example.com/v1" required
+                               type="url">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Model Name:</label>
+                        <input class="form-input" name="model" placeholder="e.g., deepseek-ai/DeepSeek-R1" required
+                               type="text">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cost per 1M Input Tokens ($):</label>
+                        <input class="form-input" name="cost_input" step="0.01" type="number" value="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cost per 1M Output Tokens ($):</label>
+                        <input class="form-input" name="cost_output" step="0.01" type="number" value="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Priority (lower = higher priority):</label>
+                        <input class="form-input" name="priority" type="number" value="999">
+                    </div>
+                    <button class="btn btn-primary" type="submit">Add Provider</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="main-app-tab" style="display: none;">
+            <div class="iframe-container">
+                <iframe id="main-app-iframe" src="/"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let providersData = {};
+
+    function showTab(tabName, clickedTab) {
+        // Hide all tabs
+        document.getElementById('providers-tab').style.display = 'none';
+        document.getElementById('main-app-tab').style.display = 'none';
+
+        // Remove active class from all nav tabs
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        // Show selected tab
+        if (tabName === 'providers') {
+            document.getElementById('providers-tab').style.display = 'block';
+        } else if (tabName === 'main-app') {
+            document.getElementById('main-app-tab').style.display = 'block';
+            // Refresh iframe
+            document.getElementById('main-app-iframe').src = document.getElementById('main-app-iframe').src;
+        }
+
+        // Add active class to clicked tab
+        clickedTab.classList.add('active');
+    }
+
+    function updateTime() {
+        const now = new Date();
+        document.getElementById('current-time').textContent =
+            now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+    }
+
+    function showAlert(message, type = 'success') {
+        const alertsDiv = document.getElementById('alerts');
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type}`;
+        alert.textContent = message;
+        alertsDiv.appendChild(alert);
+
+        setTimeout(() => {
+            alert.remove();
+        }, 5000);
+    }
+
+    function formatCost(cost) {
+        return cost.toFixed(6);
+    }
+
+    function formatTime(ms) {
+        return ms.toFixed(0) + 'ms';
+    }
+
+    function createProviderCard(name, provider) {
+        const isActive = provider.active;
+        const hasKey = provider.has_key;
+
+        return `
+                <div class="provider-card">
+                    <div class="provider-header">
+                        <div class="provider-name">${provider.name}</div>
+                        <div class="status-badge ${isActive ? 'status-active' : 'status-inactive'}">
+                            ${isActive ? '🟢 Active' : '🔴 Inactive'}
+                        </div>
+                    </div>
+
+                    <div class="provider-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Model</div>
+                            <div class="detail-value">${provider.model}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Priority</div>
+                            <div class="detail-value">${provider.priority}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Queries</div>
+                            <div class="detail-value">${provider.stats.queries}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Failures</div>
+                            <div class="detail-value">${provider.stats.failures}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Cost (Input/Output)</div>
+                            <div class="detail-value">$${provider.cost_input}/$${provider.cost_output}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">API Key Status</div>
+                            <div class="detail-value">${hasKey ? '✅ Set' : '❌ Missing'}</div>
+                        </div>
+                    </div>
+
+                    <div class="api-key-section">
+                        <input type="password"
+                               class="api-key-input"
+                               id="key-${name}"
+                               placeholder="Enter API key for ${provider.name}"
+                               value="${hasKey ? '••••••••••••••••••••' : ''}">
+                        <button class="btn btn-primary" onclick="updateProvider('${name}')">
+                            Update API Key
+                        </button>
+                        <button class="btn btn-test" onclick="testProvider('${name}')">
+                            Test Provider
+                        </button>
+                    </div>
+                </div>
+            `;
+    }
+
+    function loadProviders() {
+        document.getElementById('loading').style.display = 'block';
+
+        fetch('/api/providers')
+            .then(response => response.json())
+            .then(data => {
+                providersData = data;
+                renderProviders();
+                updateGlobalStats(data.global_stats);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('global-stats').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error loading providers:', error);
+                showAlert('Failed to load providers: ' + error.message, 'error');
+                document.getElementById('loading').style.display = 'none';
+            });
+    }
+
+    function renderProviders() {
+        const container = document.getElementById('providers-list');
+        const providers = providersData.providers;
+
+        let html = '<h3>🔌 Available Providers</h3>';
+
+        // Sort providers by priority
+        const sortedProviders = Object.entries(providers).sort((a, b) =>
+            a[1].priority - b[1].priority
+        );
+
+        for (const [name, provider] of sortedProviders) {
+            html += createProviderCard(name, provider);
+        }
+
+        container.innerHTML = html;
+    }
+
+    function updateGlobalStats(stats) {
+        document.getElementById('total-queries').textContent = stats.total_queries;
+        document.getElementById('total-cost').textContent = '$' + formatCost(stats.total_cost);
+        document.getElementById('avg-response').textContent = formatTime(stats.average_response_time_ms);
+
+        const activeCount = Object.values(providersData.providers).filter(p => p.active).length;
+        document.getElementById('active-providers').textContent = activeCount;
+    }
+
+    function updateProvider(providerName) {
+        const keyInput = document.getElementById(`key-${providerName}`);
+        const apiKey = keyInput.value.trim();
+
+        if (!apiKey || apiKey === '••••••••••••••••••••') {
+            showAlert('Please enter a valid API key', 'error');
+            return;
+        }
+
+        fetch(`/api/providers/${providerName}/update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                api_key: apiKey
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    loadProviders(); // Reload to show updated status
+                } else {
+                    showAlert(data.error, 'error');
+                }
+            })
+            .catch(error => {
+                showAlert('Update failed: ' + error.message, 'error');
+            });
+    }
+
+    function testProvider(providerName) {
+        showAlert(`Testing ${providerName}...`, 'success');
+
+        fetch('/test_api')
+            .then(response => response.json())
+            .then(data => {
+                const test = data.tests.find(t => t.provider.toLowerCase().includes(providerName.toLowerCase()));
+                if (test) {
+                    if (test.success) {
+                        showAlert(`${test.provider} test successful! Response: ${test.response.substring(0, 100)}...`, 'success');
+                    } else {
+                        showAlert(`${test.provider} test failed: ${test.error}`, 'error');
+                    }
+                } else {
+                    showAlert(`No test results for ${providerName}`, 'error');
+                }
+            })
+            .catch(error => {
+                showAlert('Test failed: ' + error.message, 'error');
+            });
+    }
+
+    // Add provider form handler
+    document.getElementById('add-provider-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+
+        fetch('/api/providers/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                    this.reset();
+                    loadProviders(); // Reload to show new provider
+                } else {
+                    showAlert(result.error, 'error');
+                }
+            })
+            .catch(error => {
+                showAlert('Failed to add provider: ' + error.message, 'error');
+            });
+    });
+
+    // Initialize
+    updateTime();
+    setInterval(updateTime, 1000);
+    loadProviders();
+
+    // Auto-refresh every 30 seconds
+    setInterval(loadProviders, 30000);
+</script>
+</body>
+</html>

@@ -38,6 +38,36 @@
         .app-header-info { text-align: right; font-size: 0.9em; }
         .app-header-info div { margin-bottom: 4px; opacity: 0.95; }
 
+        /* Providers button in header */
+        .header-buttons {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .btn-providers {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-providers:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-1px);
+        }
+
         .app-main-layout { display: flex; flex-grow: 1; overflow: hidden; }
         .main-content-area {
             flex: 3; display: flex; flex-direction: column; padding: 0px 20px 20px 20px;
@@ -228,6 +258,7 @@
             body { padding: 0; }
             .app-container { height: 100vh; border-radius: 0; box-shadow: none; }
             .app-header { padding: 12px 15px; }
+            .header-buttons { position: static; transform: none; margin-left: 15px; }
         }
     </style>
 </head>
@@ -235,8 +266,13 @@
     <div class="app-container">
         <header class="app-header">
             <div><h1>Enterprise AI Assistant</h1></div>
+            <div class="header-buttons">
+                <button class="btn-providers" onclick="openProviders()">
+                    🔧 Providers
+                </button>
+            </div>
             <div class="app-header-info">
-                <div>👤 User: bamavadat</div>
+                <div>👤 User: {{ user_login }}</div>
                 <div><span id="tehran-time">--:--:--</span> (Tehran Time)</div>
                 <div>🤖 API: <span id="api-status">Initializing...</span></div>
             </div>
@@ -366,6 +402,11 @@
 
         const history = { sql: [], general: [] };
         let isDocLoaded = false;
+
+        // NEW: Function to open providers dashboard
+        function openProviders() {
+            window.open('/providers', '_blank');
+        }
 
         // Status management
         function updateStatus(type, status, message, details = '', progress = 0) {
@@ -578,7 +619,18 @@
             try {
                 const res = await fetch('/test_api');
                 const data = await res.json();
-                apiStatus.textContent = data.success ? '✅ Online' : '❌ Error';
+
+                if (data.tests && data.tests.length > 0) {
+                    const successfulTests = data.tests.filter(test => test.success);
+                    if (successfulTests.length > 0) {
+                        apiStatus.textContent = `✅ ${successfulTests[0].provider}`;
+                    } else {
+                        apiStatus.textContent = '❌ All Failed';
+                    }
+                } else {
+                    apiStatus.textContent = data.status === 'no_providers' ? '❌ No Providers' : '❌ Error';
+                }
+
                 console.log("API test result:", data);
             } catch (e) {
                 apiStatus.textContent = '❌ Failed';
@@ -936,6 +988,9 @@
                                         if (data.usage) {
                                             statsObj.tokens += data.usage.total_tokens || 0;
                                             statsObj.cost += parseFloat(data.usage.query_cost || 0);
+                                        }
+                                        if (data.cost) {
+                                            statsObj.cost += parseFloat(data.cost);
                                         }
                                         updateStats();
 
