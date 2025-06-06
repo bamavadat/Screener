@@ -1,49 +1,6 @@
 [build]
-  command = "pip install -r requirements.txt"
-  functions = "netlify/functions"
   publish = "templates"
 
-[build.environment]
-  PYTHON_VERSION = "3.12"
-
-# Force API routes to functions (no wildcards)
-[[redirects]]
-  from = "/api/status"
-  to = "/.netlify/functions/app"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/chat"
-  to = "/.netlify/functions/app"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/stream_chat"
-  to = "/.netlify/functions/app"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/sql_query"
-  to = "/.netlify/functions/app"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/sync_file"
-  to = "/.netlify/functions/app"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/test"
-  to = "/.netlify/functions/app"
-  status = 200
-  force = true
-
-# Static files (must be last)
 [[redirects]]
   from = "/*"
   to = "/index.html"
