@@ -1,7 +1,7 @@
 [build]
   command = "pip install -r requirements.txt"
   functions = "netlify/functions"
-  publish = "."
+  publish = "templates"
 
 [build.environment]
   PYTHON_VERSION = "3.12"
@@ -20,6 +20,3 @@
   from = "/*"
   to = "/index.html"
   status = 200
-
-[functions."*"]
-  timeout = 900
