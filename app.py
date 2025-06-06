@@ -25,14 +25,66 @@ class OpenRouterAPI:
     def __init__(self, api_key):
         self.api_key = api_key
         print(f"INFO: OpenRouterAPI __init__ - Initializing with API key (status: {'Set' if api_key and not 'YOUR_ACTUAL' in api_key else 'NOT SET or Placeholder'}).", file=sys.stderr)
+
+        # Initialize with explicit default headers for OpenRouter
         self.client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=api_key,
-            timeout=None  # MINIMAL CHANGE: Remove timeout for slow responses
+            timeout=None,
+            default_headers={
+                "HTTP-Referer": "http://127.0.0.1:5000",
+                "X-Title": "Screener Bot (Local)"
+            }
         )
         self.input_cost_per_1m = 0.55
         self.output_cost_per_1m = 2.19
-        print("INFO: OpenRouterAPI __init__ - OpenAI client initialized for OpenRouter", file=sys.stderr)
+        print("INFO: OpenRouterAPI __init__ - OpenAI client initialized for OpenRouter with default headers", file=sys.stderr)
+
+    def test_api_manual(self):
+        """Manual API test using requests instead of OpenAI client"""
+        import requests
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "http://127.0.0.1:5000",
+            "X-Title": "Screener Bot Test"
+        }
+
+        data = {
+            "model": "deepseek/deepseek-r1-0528:free",
+            "messages": [
+                {"role": "system", "content": "You are a helpful AI assistant. Respond: 'Test API Online'"},
+                {"role": "user", "content": "Hello AI, connectivity test."}
+            ],
+            "max_tokens": 50
+        }
+
+        try:
+            response = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                json=data,
+                headers=headers,
+                timeout=30
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                return {
+                    "success": True,
+                    "answer": result.get("choices", [{}])[0].get("message", {}).get("content", "No content"),
+                    "model_used": "deepseek/deepseek-r1-0528:free"
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": f"HTTP {response.status_code}: {response.text}"
+                }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Request error: {str(e)}"
+            }
 
     def _calculate_cost(self, usage_data):
         if not usage_data:
@@ -105,8 +157,8 @@ class OpenRouterAPI:
         )
         api_messages = [{"role": "system", "content": system_prompt_content}] + messages
 
-        your_site_url = "https://screener-rho.vercel.app/"
-        your_site_name = "Screener SQL Bot (Vercel)"
+        your_site_url = "http://127.0.0.1:5000/"
+        your_site_name = "Screener SQL Bot (Local)"
         extra_headers = {"HTTP-Referer": your_site_url, "X-Title": your_site_name}
 
         print(f"    Total length of user_prompt_content (derived from messages & doc): Approx {len(document_content) + len(messages[-1]['content']) if messages else len(document_content)} chars.", file=sys.stderr)
@@ -126,8 +178,8 @@ class OpenRouterAPI:
         system_prompt_content = "You are a helpful assistant."
         api_messages = [{"role": "system", "content": system_prompt_content}] + messages
 
-        your_site_url = "https://screener-rho.vercel.app/"
-        your_site_name = "Screener General Chat (Vercel)"
+        your_site_url = "http://127.0.0.1:5000/"
+        your_site_name = "Screener General Chat (Local)"
         extra_headers = {"HTTP-Referer": your_site_url, "X-Title": your_site_name}
 
         if messages: print(f"    Messages being sent (last user message shown): '{messages[-1]['content'][:100]}...'", file=sys.stderr)
@@ -141,13 +193,13 @@ class OpenRouterAPI:
         yield from self._process_stream(stream_iterator, bot_type="General Chat")
 
 # --- Global API Key and instance ---
-OPENROUTER_API_KEY = "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"
-if OPENROUTER_API_KEY == "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":
-    print("INFO: app.py - Using the specific OpenRouter API key provided by the user.", file=sys.stderr)
-elif not OPENROUTER_API_KEY or "YOUR_OPENROUTER_API_KEY_HERE" in OPENROUTER_API_KEY :
+OPENROUTER_API_KEY = "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"
+
+print(f"INFO: app.py - Using hardcoded OpenRouter API key (ending with ...{OPENROUTER_API_KEY[-4:] if OPENROUTER_API_KEY and len(OPENROUTER_API_KEY) > 4 else '****'}).", file=sys.stderr)
+
+if not OPENROUTER_API_KEY or "YOUR_OPENROUTER_API_KEY_HERE" in OPENROUTER_API_KEY:
     print("CRITICAL WARNING: app.py - OpenRouter API key is NOT SET or is a placeholder!", file=sys.stderr)
-else:
-    print(f"INFO: app.py - OpenRouter API Key configured (ending with ...{OPENROUTER_API_KEY[-4:] if OPENROUTER_API_KEY and len(OPENROUTER_API_KEY) > 4 else '****'}).", file=sys.stderr)
+
 open_router_api = OpenRouterAPI(OPENROUTER_API_KEY)
 
 DEFAULT_DOC_FILENAME = "extracted_edit_url.txt"
@@ -340,26 +392,54 @@ def clear_route():
 @app.route('/test_api')
 def test_api_route():
     ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-    is_example_key = OPENROUTER_API_KEY == "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"
-    generic_placeholder_check = "YOUR_OPENROUTER_API_KEY_HERE"
-    if generic_placeholder_check in OPENROUTER_API_KEY:
-        print(f"WARNING: [{ts}] API Test: Generic placeholder API key.", file=sys.stderr)
-        return jsonify({"success": False, "error": "OpenRouter API key placeholder. Cannot test.", "timestamp": ts})
-    if is_example_key: print(f"INFO: [{ts}] API Test: Using specific user-provided OpenRouter API key.", file=sys.stderr)
-    elif not OPENROUTER_API_KEY: print(f"ERROR: [{ts}] API Test: OpenRouter API key not set.", file=sys.stderr); return jsonify({"success": False, "error": "OpenRouter API key not configured.", "timestamp": ts})
 
-    sys_prompt = "You are a helpful AI assistant. Respond: 'Test API Online'"; usr_prompt = "Hello AI, connectivity test."
-    try:
-        response = open_router_api.client.chat.completions.create(
-            model="openrouter/auto", messages=[{"role": "system", "content": sys_prompt}, {"role": "user", "content": usr_prompt}],
-            max_tokens=50,
-            extra_headers={ "HTTP-Referer": "https://screener-rho.vercel.app/test_api", "X-Title": "Screener Bot API Test (Vercel)" }
-        )
-        answer = response.choices[0].message.content if response.choices and response.choices[0].message else "[No content]"
-        return jsonify({"success": True, "answer": answer, "model_used": "openrouter/auto (or routed)", "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')})
-    except Exception as e:
-        print(f"ERROR: [{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] API test error: {str(e)}", file=sys.stderr)
-        return jsonify({"success": False, "error": f"API test error: {str(e)}", "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')})
+    if not OPENROUTER_API_KEY:
+        print(f"ERROR: [{ts}] API Test: OpenRouter API key not set.", file=sys.stderr)
+        return jsonify({"success": False, "error": "OpenRouter API key not configured.", "timestamp": ts})
+
+    print(f"INFO: [{ts}] API Test: Using new OpenRouter API key.", file=sys.stderr)
+
+    # Try manual request first
+    manual_result = open_router_api.test_api_manual()
+    if manual_result["success"]:
+        print(f"INFO: [{ts}] Manual API test successful.", file=sys.stderr)
+        return jsonify({
+            **manual_result,
+            "method": "manual_requests",
+            "timestamp": ts
+        })
+    else:
+        print(f"ERROR: [{ts}] Manual API test failed: {manual_result['error']}", file=sys.stderr)
+
+        # Try OpenAI client as fallback
+        try:
+            response = open_router_api.client.chat.completions.create(
+                model="deepseek/deepseek-r1-0528:free",
+                messages=[
+                    {"role": "system", "content": "You are a helpful AI assistant. Respond: 'Test API Online'"},
+                    {"role": "user", "content": "Hello AI, connectivity test."}
+                ],
+                max_tokens=50,
+                extra_headers={
+                    "HTTP-Referer": "http://127.0.0.1:5000",
+                    "X-Title": "Screener Bot API Test (Local)"
+                }
+            )
+            answer = response.choices[0].message.content if response.choices and response.choices[0].message else "[No content]"
+            return jsonify({
+                "success": True,
+                "answer": answer,
+                "model_used": "deepseek/deepseek-r1-0528:free",
+                "method": "openai_client",
+                "timestamp": ts
+            })
+        except Exception as e:
+            print(f"ERROR: [{ts}] OpenAI client test error: {str(e)}", file=sys.stderr)
+            return jsonify({
+                "success": False,
+                "error": f"Both manual and OpenAI client failed. Manual: {manual_result['error']}, Client: {str(e)}",
+                "timestamp": ts
+            })
 
 @app.route('/api_info')
 def api_info_route():
@@ -391,7 +471,8 @@ if __name__ == '__main__':
     print("="*70, file=sys.stderr)
     print("🚀 DocuQuery SQL Bot with OpenRouter API (Enhanced Stats) - LOCAL DEV MODE", file=sys.stderr)
     print(f"📅 Current UTC Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}", file=sys.stderr)
-    print(f"🌐 Expected Deployed URL (Example for Referer): https://screener-rho.vercel.app/", file=sys.stderr)
+    print(f"👤 Current User: {user_login}", file=sys.stderr)
+    print(f"🌐 Local URL: http://127.0.0.1:5000/", file=sys.stderr)
     print("="*70, file=sys.stderr)
     app.run(debug=True, host='0.0.0.0', port=5000)
 
