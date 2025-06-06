@@ -6,20 +6,44 @@
 [build.environment]
   PYTHON_VERSION = "3.12"
 
-# More specific API routing
+# Force API routes to functions (no wildcards)
 [[redirects]]
-  from = "/api*"
-  to = "/.netlify/functions/app/:splat"
+  from = "/api/status"
+  to = "/.netlify/functions/app"
   status = 200
   force = true
 
 [[redirects]]
-  from = "/proxy*"
-  to = "/.netlify/functions/proxy/:splat"
+  from = "/api/chat"
+  to = "/.netlify/functions/app"
   status = 200
   force = true
 
-# Static files
+[[redirects]]
+  from = "/api/stream_chat"
+  to = "/.netlify/functions/app"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/sql_query"
+  to = "/.netlify/functions/app"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/sync_file"
+  to = "/.netlify/functions/app"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/test"
+  to = "/.netlify/functions/app"
+  status = 200
+  force = true
+
+# Static files (must be last)
 [[redirects]]
   from = "/*"
   to = "/index.html"

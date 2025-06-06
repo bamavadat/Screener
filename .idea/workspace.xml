@@ -5,9 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b6b3afcc-f212-4566-be74-f77e3b56e944" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/netlify/functions/app.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/netlify/functions/proxy.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/netlify_functions_proxy.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/netlify.toml" beforeDir="false" afterPath="$PROJECT_DIR$/netlify.toml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
