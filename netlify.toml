@@ -6,16 +6,20 @@
 [build.environment]
   PYTHON_VERSION = "3.12"
 
+# More specific API routing
 [[redirects]]
-  from = "/api/*"
+  from = "/api*"
   to = "/.netlify/functions/app/:splat"
   status = 200
+  force = true
 
 [[redirects]]
-  from = "/proxy/*"
+  from = "/proxy*"
   to = "/.netlify/functions/proxy/:splat"
   status = 200
+  force = true
 
+# Static files
 [[redirects]]
   from = "/*"
   to = "/index.html"
