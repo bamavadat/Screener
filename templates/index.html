@@ -3,743 +3,1044 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise AI Assistant</title>
+    <title>Enterprise AI Assistant - OpenRouter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --primary-bg: #f4f8fa; --container-bg: #ffffff; --header-bg-start: #0061A7; --header-bg-end: #007bff;
+            --sidebar-bg: #f8f9fa; --text-primary: #1d232a; --text-secondary: #5a6773; --text-light: #ffffff;
+            --border-color: #e3e9ef; --accent-color: #007bff; --accent-hover: #0056b3; --error-color: #e74c3c;
+            --success-color: #2ecc71; --warning-color: #f39c12; --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --border-radius: 10px; --box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
         }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            font-family: var(--font-family); background-color: var(--primary-bg); color: var(--text-primary);
+            line-height: 1.65; display: flex; justify-content: center; align-items: flex-start;
+            min-height: 100vh; padding: 20px;
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
+        .app-container {
+            width: 100%; max-width: 1500px; background: var(--container-bg); border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow); overflow: hidden; display: flex; flex-direction: column;
+            height: calc(100vh - 40px);
         }
-
-        .header {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-            color: white;
-            padding: 20px;
-            text-align: center;
+        .app-header {
+            background-image: linear-gradient(135deg, var(--header-bg-start) 0%, var(--header-bg-end) 100%);
+            padding: 18px 30px; color: var(--text-light); display: flex; justify-content: space-between;
+            align-items: center; flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,0.1);
         }
+        .app-header h1 { font-size: 1.75em; margin: 0; font-weight: 600; letter-spacing: -0.5px; }
+        .app-header-info { text-align: right; font-size: 0.9em; }
+        .app-header-info div { margin-bottom: 4px; opacity: 0.95; }
 
-        .status-bar {
-            background: #34495e;
-            color: white;
-            padding: 10px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 14px;
+        .app-main-layout { display: flex; flex-grow: 1; overflow: hidden; }
+        .main-content-area {
+            flex: 3; display: flex; flex-direction: column; padding: 0px 20px 20px 20px;
+            border-right: 1px solid var(--border-color); overflow: hidden;
         }
-
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .tabs-nav {
+            display: flex; border-bottom: 1px solid var(--border-color); padding: 0 20px;
+            flex-shrink: 0; background-color: #fbfcfd; position: relative;
         }
+        .tab-button {
+            padding: 14px 20px; cursor: pointer; border: none; border-bottom: 3px solid transparent;
+            background-color: transparent; color: var(--text-secondary); font-size: 0.95em;
+            font-weight: 500; margin-right: 10px; transition: color 0.2s ease, border-color 0.2s ease;
+        }
+        .tab-button.active { color: var(--accent-color); border-bottom-color: var(--accent-color); }
+        .tab-button:hover:not(.active) { color: var(--text-primary); }
 
+        /* FIXED: Status Indicator - SQL shows by default, General hidden */
         .status-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #e74c3c;
+            min-height: 60px; padding: 15px 20px; margin: 0; border-radius: 0;
+            border-left: 4px solid; font-size: 0.9em; position: relative; overflow: hidden;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 249, 250, 0.95) 100%);
+            backdrop-filter: blur(8px); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+            z-index: 100; border-bottom: 1px solid var(--border-color);
+            display: flex; flex-direction: column; justify-content: flex-start;
         }
 
-        .status-indicator.success {
-            background: #27ae60;
+        /* FIXED: Initial visibility - only SQL status shown */
+        #sql-status { display: flex; }
+        #general-status { display: none; }
+
+        .status-indicator.active { display: flex; }
+        .status-indicator.connecting { border-color: #2196f3; color: #1565c0; }
+        .status-indicator.waiting { border-color: var(--warning-color); color: #e65100; }
+        .status-indicator.streaming { border-color: var(--success-color); color: #2e7d32; }
+        .status-indicator.error { border-color: var(--error-color); color: #c62828; }
+        .status-indicator.timeout { border-color: #e91e63; color: #ad1457; }
+
+        .status-content {
+            display: flex; flex-direction: column; align-items: flex-start;
+            margin-bottom: auto;
         }
 
-        .tabs {
-            display: flex;
-            background: #ecf0f1;
+        .status-main-line {
+            display: flex; align-items: center; margin-bottom: 4px;
         }
 
-        .tab {
-            flex: 1;
-            padding: 15px;
-            text-align: center;
-            cursor: pointer;
-            border: none;
-            background: transparent;
-            font-size: 16px;
-            transition: all 0.3s;
+        .status-indicator .status-icon {
+            display: inline-block; margin-right: 8px; font-weight: bold; font-size: 1em;
         }
 
-        .tab.active {
-            background: white;
-            border-bottom: 3px solid #3498db;
-            color: #3498db;
+        .status-indicator .status-text {
+            font-weight: 500;
         }
 
-        .tab-content {
-            display: none;
-            padding: 20px;
-            min-height: 500px;
+        .status-indicator .status-details {
+            display: block; font-size: 0.8em; opacity: 0.8; margin-top: 2px; line-height: 1.3;
         }
 
-        .tab-content.active {
-            display: block;
+        .status-indicator .progress-bar {
+            position: absolute; bottom: 0; left: 0; height: 3px;
+            background: currentColor; opacity: 0.4; transition: width 0.3s ease;
         }
 
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            height: 500px;
+        .status-indicator.streaming .progress-bar {
+            animation: pulse 2s infinite;
         }
 
-        .messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            background: #f9f9f9;
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.8; }
         }
 
+        .tab-content { display: none; flex-grow: 1; overflow: hidden; flex-direction: column; padding-top: 0; }
+        .tab-content.active { display: flex; }
+
+        .chat-interaction-wrapper { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; padding-top: 20px; }
+
+        .chat-history-container {
+            flex-grow: 1; overflow-y: auto; padding: 20px; background-color: var(--primary-bg);
+            border-radius: var(--border-radius); margin-bottom: 15px; border: 1px solid var(--border-color);
+            position: relative; z-index: 1;
+        }
         .message {
-            margin-bottom: 15px;
-            padding: 10px;
-            border-radius: 8px;
-            max-width: 80%;
+            margin-bottom: 18px; padding: 12px 18px; padding-bottom: 38px; border-radius: var(--border-radius);
+            max-width: 80%; clear: both; word-wrap: break-word; box-shadow: 0 2px 5px rgba(0,0,0,0.06);
+            position: relative;
         }
+        .message.user { background: var(--accent-color); color: var(--text-light); margin-left: auto; }
+        .message.bot { background: var(--container-bg); border: 1px solid var(--border-color); color: var(--text-primary); margin-right: auto; }
+        .message-sender { font-weight: 600; font-size: 0.8em; margin-bottom: 6px; color: var(--text-secondary); }
+        .message.user .message-sender { color: rgba(255,255,255,0.8); }
+        .message-timestamp { float: right; font-size: 0.75em; opacity: 0.7; margin-left: 10px; }
 
-        .message.user {
-            background: #3498db;
-            color: white;
-            margin-left: auto;
+        .message-actions {
+            position: absolute; bottom: 6px; right: 8px; display: flex; gap: 8px;
+            opacity: 0; transition: opacity 0.2s ease-in-out;
         }
-
-        .message.assistant {
-            background: white;
-            border: 1px solid #ddd;
+        .message:hover .message-actions { opacity: 1; }
+        .message-action-button {
+            background: rgba(0,0,0,0.05); border: none; color: var(--text-secondary); padding: 4px;
+            border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            width: 28px; height: 28px; transition: background-color 0.2s;
         }
+        .message-action-button svg { width: 14px; height: 14px; fill: currentColor; }
+        .message.user .message-action-button { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); }
 
-        .input-group {
-            display: flex;
-            gap: 10px;
+        .message-content { font-size: 0.95em; margin-top: 5px; }
+        .message-content .error-text { color: var(--error-color); font-weight: 500; }
+        .message-content em { color: #6c757d; font-style: italic; }
+        .message-content pre[class*="language-sql"] { background: #2d2d2d; padding: 1em; border-radius: 6px; overflow: auto; font-size: 0.9em; }
+
+        .chat-input-area { display: flex; gap: 10px; padding-top: 15px; border-top: 1px solid var(--border-color); flex-shrink: 0; }
+        .chat-input-area textarea {
+            flex-grow: 1; padding: 12px 15px; border: 1px solid var(--border-color);
+            border-radius: var(--border-radius); font-size: 1em; min-height: 50px; resize: vertical;
+            max-height: 150px; font-family: inherit;
         }
-
-        .input-group input, .input-group textarea {
-            flex: 1;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
+        .chat-input-area textarea:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2); }
+        .chat-input-area button {
+            flex-shrink: 0; padding: 0 25px; font-size: 1em; background-color: var(--accent-color);
+            color: var(--text-light); border: none; border-radius: var(--border-radius);
+            cursor: pointer; transition: background-color 0.3s;
         }
+        .chat-input-area button:hover { background-color: var(--accent-hover); }
+        .chat-input-area button:disabled { background-color: #adb5bd; cursor: not-allowed; }
 
-        .input-group textarea {
-            resize: vertical;
-            min-height: 60px;
+        .sidebar {
+            flex: 1; padding: 20px; background-color: var(--sidebar-bg); overflow-y: auto;
+            display: flex; flex-direction: column; gap: 20px;
         }
-
+        .sidebar-section {
+            background-color: var(--container-bg); padding: 20px; border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+        .sidebar-section h3 {
+            font-size: 1.1em; color: var(--text-primary); margin-bottom: 15px;
+            padding-bottom: 10px; border-bottom: 1px solid var(--border-color); font-weight: 600;
+        }
+        .sidebar-section p { font-size: 0.9em; color: var(--text-secondary); margin-bottom: 10px; }
         .btn {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.3s;
+            display: block; width: 100%; margin-bottom: 12px; padding: 10px 15px;
+            font-weight: 500; border: none; border-radius: var(--border-radius);
+            cursor: pointer; color: white;
+        }
+        .btn-sync { background-color: var(--success-color); }
+        .btn-sync:hover { background-color: #1e7e34; }
+        .btn-secondary { background-color: #6c757d; }
+        .btn-secondary:hover { background-color: #5a6268; }
+        .btn-test-api-small {
+            font-size: 0.85em !important; padding: 6px 12px !important;
+            background-color: #e9ecef !important; color: var(--text-secondary) !important;
+            border: 1px solid var(--border-color) !important;
         }
 
-        .btn:hover {
-            background: #2980b9;
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+        .stat-item { background: var(--primary-bg); padding: 10px; border-radius: 6px; text-align: center; }
+        .stat-value { font-size: 1.2em; font-weight: 600; color: var(--accent-color); }
+        .stat-label { font-size: 0.75em; color: var(--text-secondary); }
+
+        .loading-indicator {
+            text-align: center; padding: 10px 0; display: none; justify-content: center;
+            align-items: center; flex-direction: column;
+        }
+        .spinner {
+            width: 18px; height: 18px; border: 3px solid rgba(0,0,0,0.1);
+            border-top-color: var(--accent-color); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 3px;
         }
 
-        .btn:disabled {
-            background: #bdc3c7;
-            cursor: not-allowed;
+        .recent-questions-section { margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); }
+        .recent-questions-list { list-style: none; padding: 0; max-height: 120px; overflow-y: auto; }
+        .recent-questions-list li {
+            padding: 6px 10px; margin-bottom: 4px; background-color: #f1f3f5;
+            border: 1px solid #e7eaed; border-radius: 4px; cursor: pointer;
+            font-size: 0.85em; transition: background-color 0.2s; overflow: hidden;
+            text-overflow: ellipsis; white-space: nowrap;
         }
+        .recent-questions-list li:hover { background-color: #e2e6ea; }
 
-        .sql-section {
-            margin-bottom: 30px;
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        @media (max-width: 992px) {
+            .app-main-layout { flex-direction: column; }
+            .main-content-area { border-right: none; border-bottom: 1px solid var(--border-color); }
         }
-
-        .sql-section h3 {
-            margin-bottom: 15px;
-            color: #2c3e50;
-        }
-
-        .document-info {
-            background: #ecf0f1;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .recent-queries {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
-
-        .query-item {
-            padding: 8px 12px;
-            background: white;
-            margin: 5px 0;
-            border-radius: 4px;
-            border-left: 3px solid #3498db;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .query-item:hover {
-            background: #e3f2fd;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .stat-card {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 24px;
-            font-weight: bold;
-            color: #3498db;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: #7f8c8d;
-            margin-top: 5px;
-        }
-
-        .utilities {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .error {
-            color: #e74c3c;
-            background: #fdf2f2;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
-        }
-
-        .success {
-            color: #27ae60;
-            background: #f0f8f0;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
+        @media (max-width: 768px) {
+            body { padding: 0; }
+            .app-container { height: 100vh; border-radius: 0; box-shadow: none; }
+            .app-header { padding: 12px 15px; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🤖 Enterprise AI Assistant</h1>
-            <p>👤 User: bamavadat</p>
-            <p id="current-time">19:53:24 (Tehran Time)</p>
-        </div>
-
-        <div class="status-bar">
-            <div class="status-item">
-                <div class="status-indicator" id="api-status"></div>
-                <span id="api-status-text">🤖 API: ❌ Failed</span>
+    <div class="app-container">
+        <header class="app-header">
+            <div><h1>Enterprise AI Assistant</h1></div>
+            <div class="app-header-info">
+                <div>👤 User: bamavadat</div>
+                <div><span id="tehran-time">--:--:--</span> (Tehran Time)</div>
+                <div>🤖 API: <span id="api-status">Initializing...</span></div>
             </div>
-        </div>
+        </header>
 
-        <div class="tabs">
-            <button class="tab active" onclick="switchTab('sql')">SQL Query Bot</button>
-            <button class="tab" onclick="switchTab('chat')">General Chat</button>
-        </div>
+        <main class="app-main-layout">
+            <div class="main-content-area">
+                <nav class="tabs-nav">
+                    <button class="tab-button active" onclick="openTab(event, 'sqlTab')">SQL Query Bot</button>
+                    <button class="tab-button" onclick="openTab(event, 'generalTab')">General Chat</button>
+                </nav>
 
-        <div id="sql-tab" class="tab-content active">
-            <div class="sql-section">
-                <h3>🔄 Ready</h3>
-                <div class="messages" id="sql-messages">
-                    <div class="message assistant">
-                        <strong>SQL Assistant</strong><br>
-                        <span id="sql-time">07:53 PM</span><br>
-                        SQL Bot ready. I use the local 'extracted_edit_url.txt' for context.
+                <!-- Status Indicators - SQL shown by default, General hidden -->
+                <div id="sql-status" class="status-indicator">
+                    <div class="status-content">
+                        <div class="status-main-line">
+                            <span class="status-icon">🔄</span>
+                            <span class="status-text">Ready</span>
+                        </div>
+                        <div class="status-details"></div>
+                    </div>
+                    <div class="progress-bar"></div>
+                </div>
+
+                <div id="general-status" class="status-indicator">
+                    <div class="status-content">
+                        <div class="status-main-line">
+                            <span class="status-icon">🔄</span>
+                            <span class="status-text">Ready</span>
+                        </div>
+                        <div class="status-details"></div>
+                    </div>
+                    <div class="progress-bar"></div>
+                </div>
+
+                <div id="sqlTab" class="tab-content active">
+                    <div class="chat-interaction-wrapper">
+                        <div class="chat-history-container" id="sql-messages">
+                            <div class="message bot">
+                                <div class="message-sender">SQL Assistant <span class="message-timestamp" id="sql-welcome-time"></span></div>
+                                <div class="message-content">SQL Bot ready. I use the local 'extracted_edit_url.txt' for context.</div>
+                            </div>
+                        </div>
+                        <div class="chat-input-area">
+                            <textarea id="sql-input" placeholder="Type your SQL query request here... (Ctrl+Enter to send)" disabled></textarea>
+                            <button id="sql-button" onclick="handleSQLQuestion()" disabled>➔</button>
+                        </div>
+                        <div class="recent-questions-section">
+                            <h4>Recent SQL Queries:</h4>
+                            <ul id="sql-recent" class="recent-questions-list"></ul>
+                        </div>
                     </div>
                 </div>
 
-                <div class="input-group">
-                    <textarea id="sql-input" placeholder="Type your SQL query request here... (Ctrl+Enter to send)"></textarea>
-                    <button class="btn" onclick="sendSQLQuery()">➔</button>
-                </div>
-
-                <div class="recent-queries">
-                    <h4>Recent SQL Queries:</h4>
-                    <div id="recent-queries-list">
-                        <!-- Recent queries will be populated here -->
+                <div id="generalTab" class="tab-content">
+                    <div class="chat-interaction-wrapper">
+                        <div class="chat-history-container" id="general-messages">
+                            <div class="message bot">
+                                <div class="message-sender">General Assistant <span class="message-timestamp" id="general-welcome-time"></span></div>
+                                <div class="message-content">Hello! I'm ready for a general conversation. Ask me anything!</div>
+                            </div>
+                        </div>
+                        <div class="chat-input-area">
+                            <textarea id="general-input" placeholder="Type your message here... (Ctrl+Enter to send)"></textarea>
+                            <button id="general-button" onclick="handleGeneralChat()">➔</button>
+                        </div>
+                        <div class="recent-questions-section">
+                            <h4>Recent General Messages:</h4>
+                            <ul id="general-recent" class="recent-questions-list"></ul>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="document-info">
-                <h4>📄 Document Control (SQL Bot)</h4>
-                <p><strong>Source:</strong> <span id="document-source">Loading...</span></p>
-                <br>
-                <button class="btn" onclick="syncFile()">🔄 Sync & Reload File</button>
-                <p>Updates 'extracted_edit_url.txt'.</p>
-                <br>
-                <button class="btn" onclick="checkStatus()">ℹ️ Check Status</button>
-                <div id="status-result"></div>
-            </div>
+            <aside class="sidebar">
+                <div class="sidebar-section" id="doc-section">
+                    <h3>📄 Document Control <small>(SQL Bot)</small></h3>
+                    <p>Source: <strong id="doc-source">Loading...</strong></p>
+                    <button class="btn btn-sync" onclick="handleSync()">🔄 Sync & Reload File</button>
+                    <p style="font-size:0.8em; margin-top:2px; color: var(--text-secondary);">Updates 'extracted_edit_url.txt'.</p>
+                    <button class="btn btn-secondary" onclick="handleStatus()">ℹ️ Check Status</button>
+                    <div id="doc-status"></div>
+                    <div id="doc-preview"></div>
+                </div>
 
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number" id="queries-count">0</div>
-                    <div class="stat-label">Queries</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="tokens-count">0</div>
-                    <div class="stat-label">Tokens</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="doc-chars">0</div>
-                    <div class="stat-label">Doc Chars</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="total-cost">$0.000000</div>
-                    <div class="stat-label">Cost</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="avg-cost">$0.000000</div>
-                    <div class="stat-label">Avg. Cost</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="avg-time">0.0s</div>
-                    <div class="stat-label">Avg. Time</div>
-                </div>
-            </div>
-
-            <div class="utilities">
-                <button class="btn" onclick="testAPI()">⚙️ Test API Connectivity</button>
-            </div>
-        </div>
-
-        <div id="chat-tab" class="tab-content">
-            <div class="chat-container">
-                <div class="messages" id="chat-messages">
-                    <div class="message assistant">
-                        <strong>General Assistant</strong><br>
-                        Hello! I'm ready to help with general questions and conversations.
+                <div class="sidebar-section" id="sql-stats-section">
+                    <h3>📊 SQL Bot Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item"><div class="stat-value" id="sql-queries">0</div><div class="stat-label">Queries</div></div>
+                        <div class="stat-item"><div class="stat-value" id="sql-tokens">0</div><div class="stat-label">Tokens</div></div>
+                        <div class="stat-item"><div class="stat-value" id="sql-chars">0</div><div class="stat-label">Doc Chars</div></div>
+                        <div class="stat-item"><div class="stat-value" id="sql-cost">$0.00</div><div class="stat-label">Cost</div></div>
+                        <div class="stat-item"><div class="stat-value" id="sql-avg-cost">$0.00</div><div class="stat-label">Avg. Cost</div></div>
+                        <div class="stat-item"><div class="stat-value" id="sql-avg-time">0s</div><div class="stat-label">Avg. Time</div></div>
                     </div>
                 </div>
 
-                <div class="input-group">
-                    <textarea id="chat-input" placeholder="Type your message here... (Ctrl+Enter to send)"></textarea>
-                    <button class="btn" onclick="sendChatMessage()">Send</button>
+                <div class="sidebar-section" id="general-stats-section">
+                    <h3>📊 General Chat Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item"><div class="stat-value" id="general-queries">0</div><div class="stat-label">Queries</div></div>
+                        <div class="stat-item"><div class="stat-value" id="general-tokens">0</div><div class="stat-label">Tokens</div></div>
+                        <div class="stat-item"><div class="stat-value" id="general-cost">$0.00</div><div class="stat-label">Cost</div></div>
+                        <div class="stat-item"><div class="stat-value" id="general-avg-cost">$0.00</div><div class="stat-label">Avg. Cost</div></div>
+                        <div class="stat-item"><div class="stat-value" id="general-avg-time">0s</div><div class="stat-label">Avg. Time</div></div>
+                    </div>
                 </div>
-            </div>
-        </div>
+
+                <div class="sidebar-section">
+                    <h3>⚙️ Utilities</h3>
+                    <button class="btn btn-test-api-small" onclick="handleTestAPI()">Test API Connectivity</button>
+                </div>
+            </aside>
+        </main>
     </div>
 
     <script>
-        // Global variables
-        let currentTab = 'sql';
-        let recentQueries = [];
-        let stats = {
-            queries: 0,
-            tokens: 0,
-            docChars: 0,
-            totalCost: 0,
-            avgCost: 0,
-            avgTime: 0
+        // Global variables and initialization
+        let isInitialized = false;
+        const copyIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+        const editIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
+
+        const stats = {
+            sql: { queries: 0, tokens: 0, cost: 0, chars: 0, time: 0, recent: [] },
+            general: { queries: 0, tokens: 0, cost: 0, time: 0, recent: [] }
         };
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            updateTime();
+        const history = { sql: [], general: [] };
+        let isDocLoaded = false;
+
+        // Status management
+        function updateStatus(type, status, message, details = '', progress = 0) {
+            const statusEl = document.getElementById(`${type}-status`);
+            if (!statusEl) return;
+
+            const iconEl = statusEl.querySelector('.status-icon');
+            const textEl = statusEl.querySelector('.status-text');
+            const detailsEl = statusEl.querySelector('.status-details');
+            const progressEl = statusEl.querySelector('.progress-bar');
+
+            // Remove all status classes
+            statusEl.classList.remove('connecting', 'waiting', 'streaming', 'error', 'timeout');
+
+            // Set status-specific content
+            switch(status) {
+                case 'ready':
+                    statusEl.classList.remove('active');
+                    break;
+                case 'connecting':
+                    statusEl.classList.add('active', 'connecting');
+                    iconEl.textContent = '🔗';
+                    textEl.textContent = 'Connecting to API...';
+                    break;
+                case 'waiting':
+                    statusEl.classList.add('active', 'waiting');
+                    iconEl.textContent = '⏳';
+                    textEl.textContent = 'Waiting for response...';
+                    break;
+                case 'streaming':
+                    statusEl.classList.add('active', 'streaming');
+                    iconEl.textContent = '📡';
+                    textEl.textContent = 'Receiving response...';
+                    break;
+                case 'error':
+                    statusEl.classList.add('active', 'error');
+                    iconEl.textContent = '❌';
+                    textEl.textContent = 'API Error';
+                    break;
+                case 'timeout':
+                    statusEl.classList.add('active', 'timeout');
+                    iconEl.textContent = '⏰';
+                    textEl.textContent = 'Vercel Timeout';
+                    break;
+                case 'no-content':
+                    statusEl.classList.add('active', 'error');
+                    iconEl.textContent = '📭';
+                    textEl.textContent = 'No Content Received';
+                    break;
+            }
+
+            if (message) textEl.textContent = message;
+            if (details) detailsEl.textContent = details;
+            if (progress > 0) progressEl.style.width = `${progress}%`;
+
+            // Auto-hide after delay for some statuses
+            if (['error', 'timeout', 'no-content'].includes(status)) {
+                setTimeout(() => statusEl.classList.remove('active'), 8000);
+            }
+        }
+
+        // Initialize immediately when script loads
+        function init() {
+            if (isInitialized) return;
+            isInitialized = true;
+
+            console.log("Initializing app...");
+
+            // Set welcome times
+            const now = new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+            const sqlWelcome = document.getElementById('sql-welcome-time');
+            const generalWelcome = document.getElementById('general-welcome-time');
+            if (sqlWelcome) sqlWelcome.textContent = now;
+            if (generalWelcome) generalWelcome.textContent = now;
+
+            // Setup keyboard shortcuts
+            const sqlInput = document.getElementById('sql-input');
+            const generalInput = document.getElementById('general-input');
+
+            if (sqlInput) {
+                sqlInput.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); handleSQLQuestion(); }
+                });
+            }
+            if (generalInput) {
+                generalInput.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); handleGeneralChat(); }
+                });
+            }
+
+            // Start periodic updates
             setInterval(updateTime, 1000);
-            loadRecentQueries();
+            updateTime();
+            updateStats();
 
-            // Add keyboard shortcuts
-            document.getElementById('sql-input').addEventListener('keydown', function(e) {
-                if (e.ctrlKey && e.key === 'Enter') {
-                    sendSQLQuery();
-                }
-            });
+            // Initialize app state
+            setTimeout(() => {
+                handleTestAPI();
+                handleStatus();
+            }, 100);
 
-            document.getElementById('chat-input').addEventListener('keydown', function(e) {
-                if (e.ctrlKey && e.key === 'Enter') {
-                    sendChatMessage();
-                }
-            });
-        });
+            console.log("App initialized");
+        }
+
+        // Call init immediately
+        init();
+
+        // Also call on DOM content loaded as backup
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        }
 
         function updateTime() {
-            const now = new Date();
-            const tehranTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Tehran"}));
-            const timeString = tehranTime.toLocaleTimeString('en-US', {
-                hour12: false,
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            document.getElementById('current-time').textContent = `${timeString} (Tehran Time)`;
-        }
-
-        function switchTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-
-            // Show selected tab
-            document.getElementById(tabName + '-tab').classList.add('active');
-            event.target.classList.add('active');
-            currentTab = tabName;
-        }
-
-        async function callOpenRouterAPI(messages, isStreaming = true) {
-            try {
-                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Bearer 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',
-                        'Content-Type': 'application/json',
-                        'HTTP-Referer': window.location.origin,
-                        'X-Title': 'Bamavadat Enterprise AI Assistant'
-                    },
-                    body: JSON.stringify({
-                        model: "deepseek/deepseek-r1-0528:free",
-                        messages: messages,
-                        stream: isStreaming,
-                        max_tokens: 4000
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`API Error: ${response.status}`);
+            const timeEl = document.getElementById('tehran-time');
+            if (timeEl) {
+                try {
+                    const t = new Date().toLocaleTimeString("en-GB", {
+                        timeZone: "Asia/Tehran", hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+                    });
+                    timeEl.textContent = t;
+                } catch (e) {
+                    timeEl.textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false});
                 }
-
-                return response;
-            } catch (error) {
-                console.error('OpenRouter API Error:', error);
-                throw error;
             }
         }
 
-        async function sendSQLQuery() {
-            const input = document.getElementById('sql-input');
-            const messages = document.getElementById('sql-messages');
-            const query = input.value.trim();
+        function escape(t) {
+            return typeof t === 'string' ? t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;") : t;
+        }
 
-            if (!query) return;
-
-            // Add user message
-            addMessage(messages, 'user', query);
-            input.value = '';
-
-            // Add loading message
-            const loadingDiv = addMessage(messages, 'assistant', '<div class="loading"></div> Processing SQL query...');
-
-            try {
-                // Prepare messages for API
-                const apiMessages = [
-                    {
-                        role: "system",
-                        content: "You are a SQL expert assistant. You help users with SQL queries, database design, and data analysis. Use the context from 'extracted_edit_url.txt' when relevant."
-                    },
-                    {
-                        role: "user",
-                        content: query
-                    }
-                ];
-
-                const response = await callOpenRouterAPI(apiMessages, true);
-
-                // Remove loading message
-                loadingDiv.remove();
-
-                // Add assistant response
-                const assistantDiv = addMessage(messages, 'assistant', '');
-
-                // Handle streaming response
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let fullResponse = '';
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-
-                    const chunk = decoder.decode(value);
-                    const lines = chunk.split('\n');
-
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.slice(6);
-                            if (data === '[DONE]') continue;
-
-                            try {
-                                const parsed = JSON.parse(data);
-                                if (parsed.choices && parsed.choices[0].delta && parsed.choices[0].delta.content) {
-                                    fullResponse += parsed.choices[0].delta.content;
-                                    assistantDiv.innerHTML = `<strong>SQL Assistant</strong><br>${getCurrentTime()}<br>${fullResponse}`;
-                                }
-                            } catch (e) {
-                                // Skip invalid JSON
-                            }
-                        }
-                    }
+        function showStatus(m, type = 'info') {
+            const statusEl = document.getElementById('doc-status');
+            if (statusEl) {
+                statusEl.innerHTML = `<div class="status-message ${type}" style="font-size:0.9em;margin-top:15px;word-wrap:break-word;">${escape(m)}</div>`;
+                if (type !== 'error' && type !== 'info') {
+                    setTimeout(() => { if (statusEl && statusEl.innerHTML.includes(escape(m))) statusEl.innerHTML = ''; }, 5000);
                 }
-
-                // Update stats
-                stats.queries++;
-                updateStats();
-
-                // Add to recent queries
-                addRecentQuery(query);
-
-                // Update API status
-                updateAPIStatus(true);
-
-            } catch (error) {
-                loadingDiv.innerHTML = `<strong>SQL Assistant</strong><br>${getCurrentTime()}<br>Error: ${error.message}`;
-                updateAPIStatus(false);
-            }
-        }
-
-        async function sendChatMessage() {
-            const input = document.getElementById('chat-input');
-            const messages = document.getElementById('chat-messages');
-            const message = input.value.trim();
-
-            if (!message) return;
-
-            // Add user message
-            addMessage(messages, 'user', message);
-            input.value = '';
-
-            // Add loading message
-            const loadingDiv = addMessage(messages, 'assistant', '<div class="loading"></div> Thinking...');
-
-            try {
-                // Prepare messages for API
-                const apiMessages = [
-                    {
-                        role: "system",
-                        content: "You are a helpful AI assistant. Provide clear, concise, and helpful responses to user questions."
-                    },
-                    {
-                        role: "user",
-                        content: message
-                    }
-                ];
-
-                const response = await callOpenRouterAPI(apiMessages, true);
-
-                // Remove loading message
-                loadingDiv.remove();
-
-                // Add assistant response
-                const assistantDiv = addMessage(messages, 'assistant', '');
-
-                // Handle streaming response
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let fullResponse = '';
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-
-                    const chunk = decoder.decode(value);
-                    const lines = chunk.split('\n');
-
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.slice(6);
-                            if (data === '[DONE]') continue;
-
-                            try {
-                                const parsed = JSON.parse(data);
-                                if (parsed.choices && parsed.choices[0].delta && parsed.choices[0].delta.content) {
-                                    fullResponse += parsed.choices[0].delta.content;
-                                    assistantDiv.innerHTML = `<strong>General Assistant</strong><br>${fullResponse}`;
-                                }
-                            } catch (e) {
-                                // Skip invalid JSON
-                            }
-                        }
-                    }
-                }
-
-                // Update API status
-                updateAPIStatus(true);
-
-            } catch (error) {
-                loadingDiv.innerHTML = `<strong>General Assistant</strong><br>Error: ${error.message}`;
-                updateAPIStatus(false);
-            }
-        }
-
-        function addMessage(container, type, content) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}`;
-            messageDiv.innerHTML = content;
-            container.appendChild(messageDiv);
-            container.scrollTop = container.scrollHeight;
-            return messageDiv;
-        }
-
-        function getCurrentTime() {
-            const now = new Date();
-            return now.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-            });
-        }
-
-        function updateAPIStatus(isSuccess) {
-            const indicator = document.getElementById('api-status');
-            const text = document.getElementById('api-status-text');
-
-            if (isSuccess) {
-                indicator.classList.add('success');
-                text.textContent = '🤖 API: ✅ Connected';
-            } else {
-                indicator.classList.remove('success');
-                text.textContent = '🤖 API: ❌ Failed';
-            }
-        }
-
-        function addRecentQuery(query) {
-            recentQueries.unshift(query);
-            if (recentQueries.length > 10) {
-                recentQueries = recentQueries.slice(0, 10);
-            }
-            updateRecentQueries();
-        }
-
-        function updateRecentQueries() {
-            const container = document.getElementById('recent-queries-list');
-            container.innerHTML = '';
-
-            recentQueries.forEach(query => {
-                const queryDiv = document.createElement('div');
-                queryDiv.className = 'query-item';
-                queryDiv.textContent = query.length > 50 ? query.substring(0, 50) + '...' : query;
-                queryDiv.onclick = () => {
-                    document.getElementById('sql-input').value = query;
-                };
-                container.appendChild(queryDiv);
-            });
-        }
-
-        function loadRecentQueries() {
-            const saved = localStorage.getItem('recentQueries');
-            if (saved) {
-                recentQueries = JSON.parse(saved);
-                updateRecentQueries();
             }
         }
 
         function updateStats() {
-            document.getElementById('queries-count').textContent = stats.queries;
-            document.getElementById('tokens-count').textContent = stats.tokens;
-            document.getElementById('doc-chars').textContent = stats.docChars;
-            document.getElementById('total-cost').textContent = `$${stats.totalCost.toFixed(6)}`;
-            document.getElementById('avg-cost').textContent = `$${stats.avgCost.toFixed(6)}`;
-            document.getElementById('avg-time').textContent = `${stats.avgTime.toFixed(1)}s`;
+            const elements = {
+                sqlQueries: document.getElementById('sql-queries'),
+                sqlTokens: document.getElementById('sql-tokens'),
+                sqlChars: document.getElementById('sql-chars'),
+                sqlCost: document.getElementById('sql-cost'),
+                sqlAvgCost: document.getElementById('sql-avg-cost'),
+                sqlAvgTime: document.getElementById('sql-avg-time'),
+                generalQueries: document.getElementById('general-queries'),
+                generalTokens: document.getElementById('general-tokens'),
+                generalCost: document.getElementById('general-cost'),
+                generalAvgCost: document.getElementById('general-avg-cost'),
+                generalAvgTime: document.getElementById('general-avg-time')
+            };
+
+            if (elements.sqlQueries) elements.sqlQueries.textContent = stats.sql.queries;
+            if (elements.sqlTokens) elements.sqlTokens.textContent = stats.sql.tokens.toLocaleString();
+            if (elements.sqlChars) elements.sqlChars.textContent = stats.sql.chars.toLocaleString();
+            if (elements.sqlCost) elements.sqlCost.textContent = `$${stats.sql.cost.toFixed(6)}`;
+            if (elements.sqlAvgCost) elements.sqlAvgCost.textContent = `$${(stats.sql.queries > 0 ? stats.sql.cost / stats.sql.queries : 0).toFixed(6)}`;
+            if (elements.sqlAvgTime) elements.sqlAvgTime.textContent = `${(stats.sql.queries > 0 ? stats.sql.time / stats.sql.queries / 1000 : 0).toFixed(1)}s`;
+
+            if (elements.generalQueries) elements.generalQueries.textContent = stats.general.queries;
+            if (elements.generalTokens) elements.generalTokens.textContent = stats.general.tokens.toLocaleString();
+            if (elements.generalCost) elements.generalCost.textContent = `$${stats.general.cost.toFixed(6)}`;
+            if (elements.generalAvgCost) elements.generalAvgCost.textContent = `$${(stats.general.queries > 0 ? stats.general.cost / stats.general.queries : 0).toFixed(6)}`;
+            if (elements.generalAvgTime) elements.generalAvgTime.textContent = `${(stats.general.queries > 0 ? stats.general.time / stats.general.queries / 1000 : 0).toFixed(1)}s`;
         }
 
-        async function syncFile() {
-            const result = document.getElementById('status-result');
-            result.innerHTML = '<div class="loading"></div> Syncing file...';
+        // FIXED: Tab management with proper status indicator switching
+        function openTab(evt, tabName) {
+            document.querySelectorAll('.tab-content').forEach(tc => { tc.style.display = 'none'; tc.classList.remove('active'); });
+            document.querySelectorAll('.tab-button').forEach(tb => tb.classList.remove('active'));
 
-            // Simulate file sync (since we can't access local files)
-            setTimeout(() => {
-                result.innerHTML = '<div class="success">✅ File sync completed successfully!</div>';
-                document.getElementById('document-source').textContent = 'extracted_edit_url.txt (Updated)';
-            }, 2000);
-        }
+            // Hide all status indicators first
+            document.getElementById('sql-status').style.display = 'none';
+            document.getElementById('general-status').style.display = 'none';
 
-        async function checkStatus() {
-            const result = document.getElementById('status-result');
+            const tab = document.getElementById(tabName);
+            if (tab) {
+                tab.style.display = 'flex';
+                tab.classList.add('active');
+            }
+            evt.currentTarget.classList.add('active');
 
-            try {
-                // Test API connectivity
-                await callOpenRouterAPI([{
-                    role: "user",
-                    content: "Hello"
-                }], false);
+            const docSection = document.getElementById('doc-section');
+            const sqlStatsSection = document.getElementById('sql-stats-section');
+            const generalStatsSection = document.getElementById('general-stats-section');
 
-                result.innerHTML = '<div class="success">✅ API Status: Connected and working</div>';
-                updateAPIStatus(true);
-            } catch (error) {
-                result.innerHTML = `<div class="error">❌ API Status: ${error.message}</div>`;
-                updateAPIStatus(false);
+            if (tabName === 'sqlTab') {
+                document.getElementById('sql-status').style.display = 'flex';
+                if (docSection) docSection.style.display = 'block';
+                if (sqlStatsSection) sqlStatsSection.style.display = 'block';
+                if (generalStatsSection) generalStatsSection.style.display = 'none';
+            } else if (tabName === 'generalTab') {
+                document.getElementById('general-status').style.display = 'flex';
+                if (docSection) docSection.style.display = 'none';
+                if (sqlStatsSection) sqlStatsSection.style.display = 'none';
+                if (generalStatsSection) generalStatsSection.style.display = 'block';
             }
         }
 
-        async function testAPI() {
-            const result = document.getElementById('status-result');
-            result.innerHTML = '<div class="loading"></div> Testing API connectivity...';
+        // API functions
+        async function handleTestAPI() {
+            const apiStatus = document.getElementById('api-status');
+            if (!apiStatus) return;
+
+            apiStatus.textContent = '📡 Testing...';
 
             try {
-                const response = await callOpenRouterAPI([{
-                    role: "user",
-                    content: "Hello, please respond with 'API test successful'"
-                }], false);
-
-                const data = await response.json();
-                const message = data.choices[0].message.content;
-
-                result.innerHTML = `<div class="success">✅ API Test Result: ${message}</div>`;
-                updateAPIStatus(true);
-            } catch (error) {
-                result.innerHTML = `<div class="error">❌ API Test Failed: ${error.message}</div>`;
-                updateAPIStatus(false);
+                const res = await fetch('/test_api');
+                const data = await res.json();
+                apiStatus.textContent = data.success ? '✅ Online' : '❌ Error';
+                console.log("API test result:", data);
+            } catch (e) {
+                apiStatus.textContent = '❌ Failed';
+                showStatus(`API test failed: ${e.message}`, 'error');
+                console.error("API test error:", e);
             }
         }
 
-        // Save recent queries when page unloads
-        window.addEventListener('beforeunload', () => {
-            localStorage.setItem('recentQueries', JSON.stringify(recentQueries));
-        });
+        async function handleStatus() {
+            showStatus('🔄 Checking status...', 'info');
+
+            try {
+                const res = await fetch('/status');
+                const data = await res.json();
+                updateDocStatus(data);
+                showStatus(`Status: ${data.loaded ? `Document active (${data.characters?.toLocaleString()} chars)` : 'No document'}`, 'info');
+
+                const generalInput = document.getElementById('general-input');
+                const generalButton = document.getElementById('general-button');
+                if (generalInput) generalInput.disabled = false;
+                if (generalButton) generalButton.disabled = false;
+
+                console.log("Status check result:", data);
+            } catch (e) {
+                showStatus(`Status check failed: ${e.message}`, 'error');
+                const apiStatus = document.getElementById('api-status');
+                if (apiStatus) apiStatus.textContent = '❌ Error';
+                console.error("Status check error:", e);
+            }
+        }
+
+        async function handleSync() {
+            showStatus('🔄 Syncing...', 'info');
+            const docPreview = document.getElementById('doc-preview');
+            if (docPreview) docPreview.innerHTML = '';
+
+            try {
+                const res = await fetch('/sync_onedrive_document', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+
+                if (data.success !== false) {
+                    const sqlMessages = document.getElementById('sql-messages');
+                    if (sqlMessages) addMessage(sqlMessages, data.message || 'Document synced.', false, {success: true});
+                    updateDocStatus(data);
+                    showStatus('Sync completed', 'success');
+                } else {
+                    const sqlMessages = document.getElementById('sql-messages');
+                    if (sqlMessages) addMessage(sqlMessages, data.error || 'Sync failed.', false, {error: data.error});
+                    showStatus(`Sync failed: ${data.error}`, 'error');
+                }
+                console.log("Sync result:", data);
+            } catch (e) {
+                showStatus(`Sync failed: ${e.message}`, 'error');
+                const sqlMessages = document.getElementById('sql-messages');
+                if (sqlMessages) addMessage(sqlMessages, `Sync failed: ${e.message}`, false, {error: e.message});
+                console.error("Sync error:", e);
+            }
+        }
+
+        function updateDocStatus(data) {
+            const chars = data.characters || 0;
+            const source = data.source || "None";
+            isDocLoaded = data.loaded && chars > 0;
+            stats.sql.chars = chars;
+
+            const docSource = document.getElementById('doc-source');
+            if (docSource) docSource.textContent = source;
+
+            const sqlInput = document.getElementById('sql-input');
+            const sqlButton = document.getElementById('sql-button');
+            const docPreview = document.getElementById('doc-preview');
+
+            if (isDocLoaded) {
+                if (docPreview && data.preview) {
+                    docPreview.innerHTML = `<div style="font-size:0.85em;max-height:150px;background:#f1f3f5;padding:10px;border-radius:6px;border:1px solid var(--border-color);overflow-y:auto;"><strong>📄 Preview (${chars.toLocaleString()} chars):</strong><br>${escape(data.preview)}</div>`;
+                }
+                if (sqlInput) sqlInput.disabled = false;
+                if (sqlButton) sqlButton.disabled = false;
+            } else {
+                if (docPreview) docPreview.innerHTML = '';
+                if (sqlInput) sqlInput.disabled = true;
+                if (sqlButton) sqlButton.disabled = true;
+            }
+            updateStats();
+        }
+
+        // Message functions
+        function addMessage(container, text, isUser = false, meta = {}, isPlaceholder = false) {
+            const msg = document.createElement('div');
+            msg.className = `message ${isUser ? 'user' : 'bot'}`;
+            msg.dataset.originalText = text;
+            msg.id = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const isError = !isUser && meta.error;
+            const sqlRegex = /\b(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|FROM|WHERE|JOIN)\b/i;
+
+            let content = '';
+            if (isError) {
+                content = `<div class="error-text"><strong>Error:</strong> ${escape(text)}</div>`;
+            } else if (!isUser && meta.success) {
+                if (isPlaceholder) {
+                    content = `<em>${container.id === 'sql-messages' ? 'SQL Assistant' : 'General Assistant'} is typing...</em>`;
+                } else if (container.id === 'sql-messages' && sqlRegex.test(text)) {
+                    content = `<pre><code class="language-sql">${escape(text)}</code></pre>`;
+                } else if (!text.trim()) {
+                    content = `<em>[API returned empty response.]</em>`;
+                } else {
+                    content = typeof marked === 'function' && container.id === 'general-messages' ?
+                        marked.parse(text, { breaks: true, gfm: true }) : escape(text).replace(/\n/g, '<br>');
+                }
+            } else {
+                content = escape(text).replace(/\n/g, '<br>');
+            }
+
+            // Add actions for bot messages with content and user messages
+            let actions = '<div class="message-actions">';
+            if (!isUser && !isError && !isPlaceholder && text && text.trim() && meta.success) {
+                actions += `<button class="message-action-button" title="Copy" onclick="copyMessage(this)">${copyIcon}</button>`;
+            }
+            if (isUser) {
+                actions += `<button class="message-action-button" title="Edit" onclick="editMessage(this.closest('.message'))">${editIcon}</button>`;
+            }
+            actions += '</div>';
+
+            msg.innerHTML = `
+                <div class="message-sender">${isUser ? 'You' : (container.id === 'sql-messages' ? 'SQL Assistant' : 'General Assistant')}
+                <span class="message-timestamp">${timestamp}</span></div>
+                <div class="message-content">${content}</div>
+                ${actions}`;
+
+            container.appendChild(msg);
+            container.scrollTop = container.scrollHeight;
+
+            if (!isError && !isPlaceholder && !isUser && meta.success && container.id === 'sql-messages' && sqlRegex.test(text)) {
+                const code = msg.querySelector('code.language-sql');
+                if (code && window.Prism) Prism.highlightElement(code);
+            }
+
+            return msg.id;
+        }
+
+        function copyMessage(btn) {
+            const msg = btn.closest('.message');
+            const text = msg.dataset.originalText;
+            if (text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showStatus("Copied to clipboard!", "success");
+                    // Visual feedback
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '✓';
+                    btn.style.background = 'var(--success-color)';
+                    btn.style.color = 'white';
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.style.background = '';
+                        btn.style.color = '';
+                    }, 1000);
+                }).catch(() => {
+                    showStatus("Copy failed", "error");
+                });
+            }
+        }
+
+        function editMessage(msg) {
+            console.log("Edit message:", msg);
+            // Edit functionality can be implemented here
+        }
+
+        // Chat handlers
+        async function handleSQLQuestion() {
+            const input = document.getElementById('sql-input');
+            if (!input) return;
+
+            const text = input.value.trim();
+            if (!text) return;
+
+            const container = document.getElementById('sql-messages');
+            const type = 'sql';
+
+            if (container) {
+                addMessage(container, text, true);
+                history.sql.push({role: "user", content: text});
+            }
+
+            input.value = '';
+            stats.sql.recent.unshift(text);
+            if (stats.sql.recent.length > 5) stats.sql.recent.pop();
+            updateRecent('sql');
+
+            await streamRequest('/stream_sql_query', {messages: history.sql}, container, stats.sql, history.sql, type);
+        }
+
+        async function handleGeneralChat() {
+            const input = document.getElementById('general-input');
+            if (!input) return;
+
+            const text = input.value.trim();
+            if (!text) return;
+
+            const container = document.getElementById('general-messages');
+            const type = 'general';
+
+            if (container) {
+                addMessage(container, text, true);
+                history.general.push({role: "user", content: text});
+            }
+
+            input.value = '';
+            stats.general.recent.unshift(text);
+            if (stats.general.recent.length > 5) stats.general.recent.pop();
+            updateRecent('general');
+
+            await streamRequest('/stream_general_chat', {messages: history.general}, container, stats.general, history.general, type);
+        }
+
+        // OPTIMIZED: Stream request for Vercel free 60-second timeout
+        async function streamRequest(endpoint, body, container, statsObj, historyArray, type) {
+            if (!container) {
+                console.error("No container provided for stream request");
+                return;
+            }
+
+            updateStatus(type, 'connecting', 'Connecting to API...', `Endpoint: ${endpoint}`);
+
+            let msgId = addMessage(container, "", false, {success: true}, true);
+            let response = "";
+            let startTime = Date.now();
+            let isStreamComplete = false;
+
+            // OPTIMIZED: 50-second warning for 60-second Vercel free limit
+            const timeoutWarning = setTimeout(() => {
+                if (!isStreamComplete) {
+                    updateStatus(type, 'timeout', 'Vercel timeout approaching...',
+                        'Free plan has 60s limit. Response may be cut soon.');
+                }
+            }, 50000);
+
+            // OPTIMIZED: Abort controller for clean timeout handling
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+                updateStatus(type, 'timeout', 'Request aborted', 'Preventing Vercel timeout');
+            }, 58000); // Abort at 58 seconds to prevent Vercel timeout
+
+            try {
+                console.log("Starting stream request to:", endpoint);
+                updateStatus(type, 'waiting', 'Waiting for API response...', 'Request sent, waiting for first data...');
+
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(body),
+                    signal: controller.signal // Add abort signal
+                });
+
+                clearTimeout(timeoutId); // Clear abort timeout if request starts
+
+                if (!res.ok) {
+                    clearTimeout(timeoutWarning);
+                    updateStatus(type, 'error', `HTTP Error ${res.status}`, res.statusText);
+                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                }
+
+                updateStatus(type, 'streaming', 'Receiving response...', 'Stream started');
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = "";
+                let firstChunk = false;
+                let lastUpdateTime = Date.now();
+                let chunkCount = 0;
+
+                while (true) {
+                    const {value, done} = await reader.read();
+                    if (done) {
+                        console.log("Stream reading completed");
+                        break;
+                    }
+
+                    chunkCount++;
+                    buffer += decoder.decode(value, {stream: true});
+                    let eventEndIndex;
+
+                    while ((eventEndIndex = buffer.indexOf("\n\n")) >= 0) {
+                        const event = buffer.substring(0, eventEndIndex);
+                        buffer = buffer.substring(eventEndIndex + 2);
+
+                        if (event.startsWith("data: ")) {
+                            try {
+                                const data = JSON.parse(event.substring(6));
+                                const msgDiv = document.getElementById(msgId);
+
+                                if (msgDiv) {
+                                    const contentDiv = msgDiv.querySelector('.message-content');
+
+                                    if (data.type === "content" && data.delta) {
+                                        if (!firstChunk) {
+                                            contentDiv.innerHTML = '';
+                                            firstChunk = true;
+                                            updateStatus(type, 'streaming', 'Streaming response...', 'First content received');
+                                            clearTimeout(timeoutWarning); // Clear timeout warning once streaming starts
+                                        }
+                                        response += data.delta;
+
+                                        // OPTIMIZED: More frequent updates for better UX with timeout risk
+                                        const now = Date.now();
+                                        if (now - lastUpdateTime > 100) { // Update every 100ms
+                                            const sqlRegex = /\b(SELECT|INSERT|UPDATE|DELETE)\b/i;
+                                            if (container.id === 'sql-messages' && sqlRegex.test(response)) {
+                                                contentDiv.innerHTML = `<pre><code class="language-sql">${escape(response)}</code></pre>`;
+                                                const code = contentDiv.querySelector('code.language-sql');
+                                                if (code && window.Prism) Prism.highlightElement(code);
+                                            } else if (container.id === 'general-messages' && typeof marked === 'function') {
+                                                contentDiv.innerHTML = marked.parse(response, {breaks: true, gfm: true});
+                                            } else {
+                                                contentDiv.innerHTML = escape(response).replace(/\n/g, '<br>');
+                                            }
+
+                                            container.scrollTop = container.scrollHeight;
+                                            lastUpdateTime = now;
+
+                                            // Enhanced status with timing info
+                                            const elapsed = Math.floor((now - startTime) / 1000);
+                                            const remaining = Math.max(0, 60 - elapsed);
+                                            updateStatus(type, 'streaming', 'Streaming response...',
+                                                `${response.length} chars • ${elapsed}s elapsed • ${remaining}s remaining`);
+                                        }
+                                    } else if (data.type === "done") {
+                                        console.log("Received done signal from stream");
+                                        isStreamComplete = true;
+                                        clearTimeout(timeoutWarning);
+
+                                        // Final update with complete response
+                                        const sqlRegex = /\b(SELECT|INSERT|UPDATE|DELETE)\b/i;
+                                        if (container.id === 'sql-messages' && sqlRegex.test(response)) {
+                                            contentDiv.innerHTML = `<pre><code class="language-sql">${escape(response)}</code></pre>`;
+                                            const code = contentDiv.querySelector('code.language-sql');
+                                            if (code && window.Prism) Prism.highlightElement(code);
+                                        } else if (container.id === 'general-messages' && typeof marked === 'function') {
+                                            contentDiv.innerHTML = marked.parse(response, {breaks: true, gfm: true});
+                                        } else {
+                                            contentDiv.innerHTML = escape(response).replace(/\n/g, '<br>');
+                                        }
+
+                                        msgDiv.dataset.originalText = response;
+                                        if (historyArray && response) historyArray.push({role: "assistant", content: response});
+
+                                        // Update statistics
+                                        statsObj.queries++;
+                                        if (data.duration_ms) statsObj.time += parseFloat(data.duration_ms);
+                                        if (data.usage) {
+                                            statsObj.tokens += data.usage.total_tokens || 0;
+                                            statsObj.cost += parseFloat(data.usage.query_cost || 0);
+                                        }
+                                        updateStats();
+
+                                        // Add copy button to completed message
+                                        const actionsDiv = msgDiv.querySelector('.message-actions');
+                                        if (actionsDiv && response && response.trim()) {
+                                            actionsDiv.innerHTML = `<button class="message-action-button" title="Copy" onclick="copyMessage(this)">${copyIcon}</button>`;
+                                        }
+
+                                        updateStatus(type, 'ready');
+                                        console.log("Stream completed successfully");
+                                        return;
+                                    } else if (data.type === "error") {
+                                        clearTimeout(timeoutWarning);
+                                        contentDiv.innerHTML = `<div class="error-text"><strong>Error:</strong> ${escape(data.delta)}</div>`;
+                                        updateStatus(type, 'error', 'API Error', data.delta);
+                                        console.error("Stream error:", data.delta);
+                                        return;
+                                    }
+                                }
+                            } catch (e) {
+                                console.error("Parse error:", e);
+                            }
+                        }
+                    }
+                }
+
+                // Handle incomplete stream (Vercel timeout or connection issues)
+                if (!isStreamComplete) {
+                    clearTimeout(timeoutWarning);
+                    console.log("Stream ended without done signal, finalizing partial response...");
+                    const msgDiv = document.getElementById(msgId);
+                    if (msgDiv) {
+                        msgDiv.dataset.originalText = response;
+                        if (!firstChunk && !response) {
+                            msgDiv.querySelector('.message-content').innerHTML = "<em>[No response received before timeout]</em>";
+                            updateStatus(type, 'timeout', 'No Content', 'Connection timed out');
+                        } else if (response) {
+                            // Finalize partial response
+                            const contentDiv = msgDiv.querySelector('.message-content');
+                            const sqlRegex = /\b(SELECT|INSERT|UPDATE|DELETE)\b/i;
+                            if (container.id === 'sql-messages' && sqlRegex.test(response)) {
+                                contentDiv.innerHTML = `<pre><code class="language-sql">${escape(response)}</code></pre>`;
+                                const code = contentDiv.querySelector('code.language-sql');
+                                if (code && window.Prism) Prism.highlightElement(code);
+                            } else if (container.id === 'general-messages' && typeof marked === 'function') {
+                                contentDiv.innerHTML = marked.parse(response + "\n\n**[Response incomplete - Vercel timeout]**", {breaks: true, gfm: true});
+                            } else {
+                                contentDiv.innerHTML = escape(response).replace(/\n/g, '<br>') + '<br><br><em style="color: #e74c3c;">[Response incomplete - Vercel timeout]</em>';
+                            }
+
+                            // Add copy button for partial response
+                            const actionsDiv = msgDiv.querySelector('.message-actions');
+                            if (actionsDiv && response.trim()) {
+                                actionsDiv.innerHTML = `<button class="message-action-button" title="Copy" onclick="copyMessage(this)">${copyIcon}</button>`;
+                            }
+                            updateStatus(type, 'timeout', 'Partial Response', 'Got partial response before timeout');
+                        }
+                    }
+                    if (historyArray && response) historyArray.push({role: "assistant", content: response});
+
+                    statsObj.queries++;
+                    statsObj.time += Date.now() - startTime;
+                    updateStats();
+                }
+
+            } catch (e) {
+                clearTimeout(timeoutWarning);
+                clearTimeout(timeoutId);
+                console.error("Stream request failed:", e);
+                const msgDiv = document.getElementById(msgId);
+                if (msgDiv) {
+                    if (e.name === 'AbortError') {
+                        msgDiv.querySelector('.message-content').innerHTML = `<em>[Request aborted to prevent timeout]</em>`;
+                        updateStatus(type, 'timeout', 'Request Aborted', 'Prevented Vercel timeout');
+                    } else {
+                        msgDiv.querySelector('.message-content').innerHTML = `<div class="error-text"><strong>Error:</strong> ${escape(e.message)}</div>`;
+                        if (e.name === 'TypeError' && e.message.includes('fetch')) {
+                            updateStatus(type, 'error', 'Network Error', 'Cannot connect to server');
+                        } else {
+                            updateStatus(type, 'error', 'Request Failed', e.message);
+                        }
+                    }
+                }
+
+                statsObj.queries++;
+                updateStats();
+            }
+        }
+
+        function updateRecent(type) {
+            const list = document.getElementById(`${type}-recent`);
+            const input = document.getElementById(`${type}-input`);
+            const recent = stats[type].recent;
+
+            if (!list) return;
+            list.innerHTML = '';
+            recent.forEach(q => {
+                const li = document.createElement('li');
+                li.textContent = q.length > 50 ? q.substring(0, 47) + "..." : q;
+                li.title = q;
+                li.onclick = () => { if (input) { input.value = q; input.focus(); } };
+                list.appendChild(li);
+            });
+        }
     </script>
 </body>
 </html>
