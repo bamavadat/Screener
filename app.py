@@ -28,6 +28,7 @@ class OpenRouterAPI:
         self.client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=api_key,
+            timeout=None  # MINIMAL CHANGE: Remove timeout for slow responses
         )
         self.input_cost_per_1m = 0.55
         self.output_cost_per_1m = 2.19
@@ -50,6 +51,9 @@ class OpenRouterAPI:
         model_used_from_stream = "deepseek/deepseek-r1-0528:free"
 
         try:
+            # MINIMAL ADDITION: Status tracking for frontend
+            yield {"type": "status", "message": f"{bot_type} connecting to API..."}
+
             for chunk in stream_iterator:
                 if hasattr(chunk, 'model') and chunk.model:
                     model_used_from_stream = chunk.model
@@ -268,7 +272,11 @@ def stream_sql_query_route():
             error_payload = {"type": "error", "delta": f"SQL Bot Stream generation error: {str(e)}"}
             yield f"data: {json.dumps(error_payload)}\n\n"
 
-    return Response(stream_with_context(generate_stream_sql()), mimetype='text/event-stream')
+    # MINIMAL ADDITION: Vercel timeout handling headers
+    response = Response(stream_with_context(generate_stream_sql()), mimetype='text/event-stream')
+    response.headers['X-Accel-Buffering'] = 'no'  # Disable proxy buffering
+    response.headers['Cache-Control'] = 'no-cache'
+    return response
 
 @app.route('/stream_general_chat', methods=['POST'])
 def stream_general_chat_route():
@@ -289,7 +297,11 @@ def stream_general_chat_route():
             error_payload = {"type": "error", "delta": f"Stream generation error: {str(e)}"}
             yield f"data: {json.dumps(error_payload)}\n\n"
 
-    return Response(stream_with_context(generate_stream_general()), mimetype='text/event-stream')
+    # MINIMAL ADDITION: Vercel timeout handling headers
+    response = Response(stream_with_context(generate_stream_general()), mimetype='text/event-stream')
+    response.headers['X-Accel-Buffering'] = 'no'  # Disable proxy buffering
+    response.headers['Cache-Control'] = 'no-cache'
+    return response
 
 @app.route('/status')
 def status_route():

@@ -15,7 +15,7 @@
             --primary-bg: #f4f8fa; --container-bg: #ffffff; --header-bg-start: #0061A7; --header-bg-end: #007bff;
             --sidebar-bg: #f8f9fa; --text-primary: #1d232a; --text-secondary: #5a6773; --text-light: #ffffff;
             --border-color: #e3e9ef; --accent-color: #007bff; --accent-hover: #0056b3; --error-color: #e74c3c;
-            --success-color: #2ecc71; --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --success-color: #2ecc71; --warning-color: #f39c12; --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             --border-radius: 10px; --box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -107,6 +107,40 @@
         .chat-input-area button:hover { background-color: var(--accent-hover); }
         .chat-input-area button:disabled { background-color: #adb5bd; cursor: not-allowed; }
 
+        /* Enhanced Status Indicator */
+        .status-indicator {
+            display: none; padding: 12px 20px; margin-bottom: 10px; border-radius: var(--border-radius);
+            border-left: 4px solid; font-size: 0.9em; position: relative; overflow: hidden;
+        }
+        .status-indicator.active { display: block; }
+        .status-indicator.connecting { background: #e3f2fd; border-color: #2196f3; color: #1565c0; }
+        .status-indicator.waiting { background: #fff3e0; border-color: var(--warning-color); color: #e65100; }
+        .status-indicator.streaming { background: #e8f5e8; border-color: var(--success-color); color: #2e7d32; }
+        .status-indicator.error { background: #ffebee; border-color: var(--error-color); color: #c62828; }
+        .status-indicator.timeout { background: #fce4ec; border-color: #e91e63; color: #ad1457; }
+
+        .status-indicator .status-icon {
+            display: inline-block; margin-right: 8px; font-weight: bold;
+        }
+
+        .status-indicator .status-details {
+            display: block; font-size: 0.8em; opacity: 0.8; margin-top: 4px;
+        }
+
+        .status-indicator .progress-bar {
+            position: absolute; bottom: 0; left: 0; height: 3px; background: currentColor;
+            opacity: 0.3; transition: width 0.3s ease;
+        }
+
+        .status-indicator.streaming .progress-bar {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+        }
+
         .sidebar {
             flex: 1; padding: 20px; background-color: var(--sidebar-bg); overflow-y: auto;
             display: flex; flex-direction: column; gap: 20px;
@@ -193,14 +227,19 @@
 
                 <div id="sqlTab" class="tab-content active">
                     <div class="chat-interaction-wrapper">
+                        <!-- Enhanced Status Indicator -->
+                        <div id="sql-status" class="status-indicator">
+                            <span class="status-icon">🔄</span>
+                            <span class="status-text">Ready</span>
+                            <div class="status-details"></div>
+                            <div class="progress-bar"></div>
+                        </div>
+
                         <div class="chat-history-container" id="sql-messages">
                             <div class="message bot">
                                 <div class="message-sender">SQL Assistant <span class="message-timestamp" id="sql-welcome-time"></span></div>
                                 <div class="message-content">SQL Bot ready. I use the local 'extracted_edit_url.txt' for context.</div>
                             </div>
-                        </div>
-                        <div class="loading-indicator" id="sql-loading">
-                            <div class="spinner"></div><p>Processing SQL Query...</p>
                         </div>
                         <div class="chat-input-area">
                             <textarea id="sql-input" placeholder="Type your SQL query request here... (Ctrl+Enter to send)" disabled></textarea>
@@ -215,14 +254,19 @@
 
                 <div id="generalTab" class="tab-content">
                     <div class="chat-interaction-wrapper">
+                        <!-- Enhanced Status Indicator -->
+                        <div id="general-status" class="status-indicator">
+                            <span class="status-icon">🔄</span>
+                            <span class="status-text">Ready</span>
+                            <div class="status-details"></div>
+                            <div class="progress-bar"></div>
+                        </div>
+
                         <div class="chat-history-container" id="general-messages">
                             <div class="message bot">
                                 <div class="message-sender">General Assistant <span class="message-timestamp" id="general-welcome-time"></span></div>
                                 <div class="message-content">Hello! I'm ready for a general conversation. Ask me anything!</div>
                             </div>
-                        </div>
-                        <div class="loading-indicator" id="general-loading">
-                            <div class="spinner"></div><p>Thinking...</p>
                         </div>
                         <div class="chat-input-area">
                             <textarea id="general-input" placeholder="Type your message here... (Ctrl+Enter to send)"></textarea>
@@ -291,6 +335,66 @@
 
         const history = { sql: [], general: [] };
         let isDocLoaded = false;
+
+        // Status management
+        function updateStatus(type, status, message, details = '', progress = 0) {
+            const statusEl = document.getElementById(`${type}-status`);
+            if (!statusEl) return;
+
+            const iconEl = statusEl.querySelector('.status-icon');
+            const textEl = statusEl.querySelector('.status-text');
+            const detailsEl = statusEl.querySelector('.status-details');
+            const progressEl = statusEl.querySelector('.progress-bar');
+
+            // Remove all status classes
+            statusEl.classList.remove('connecting', 'waiting', 'streaming', 'error', 'timeout');
+
+            // Set status-specific content
+            switch(status) {
+                case 'ready':
+                    statusEl.classList.remove('active');
+                    break;
+                case 'connecting':
+                    statusEl.classList.add('active', 'connecting');
+                    iconEl.textContent = '🔗';
+                    textEl.textContent = 'Connecting to API...';
+                    break;
+                case 'waiting':
+                    statusEl.classList.add('active', 'waiting');
+                    iconEl.textContent = '⏳';
+                    textEl.textContent = 'Waiting for response...';
+                    break;
+                case 'streaming':
+                    statusEl.classList.add('active', 'streaming');
+                    iconEl.textContent = '📡';
+                    textEl.textContent = 'Receiving response...';
+                    break;
+                case 'error':
+                    statusEl.classList.add('active', 'error');
+                    iconEl.textContent = '❌';
+                    textEl.textContent = 'API Error';
+                    break;
+                case 'timeout':
+                    statusEl.classList.add('active', 'timeout');
+                    iconEl.textContent = '⏰';
+                    textEl.textContent = 'Request Timeout';
+                    break;
+                case 'no-content':
+                    statusEl.classList.add('active', 'error');
+                    iconEl.textContent = '📭';
+                    textEl.textContent = 'No Content Received';
+                    break;
+            }
+
+            if (message) textEl.textContent = message;
+            if (details) detailsEl.textContent = details;
+            if (progress > 0) progressEl.style.width = `${progress}%`;
+
+            // Auto-hide after delay for some statuses
+            if (['error', 'timeout', 'no-content'].includes(status)) {
+                setTimeout(() => statusEl.classList.remove('active'), 5000);
+            }
+        }
 
         // Initialize immediately when script loads
         function init() {
@@ -370,8 +474,6 @@
                 }
             }
         }
-
-        function showLoading(el, show) { if (el) el.style.display = show ? 'flex' : 'none'; }
 
         function updateStats() {
             const elements = {
@@ -620,7 +722,7 @@
             if (!text) return;
 
             const container = document.getElementById('sql-messages');
-            const loader = document.getElementById('sql-loading');
+            const type = 'sql';
 
             if (container) {
                 addMessage(container, text, true);
@@ -632,7 +734,7 @@
             if (stats.sql.recent.length > 5) stats.sql.recent.pop();
             updateRecent('sql');
 
-            await streamRequest('/stream_sql_query', {messages: history.sql}, container, loader, stats.sql, history.sql);
+            await streamRequest('/stream_sql_query', {messages: history.sql}, container, stats.sql, history.sql, type);
         }
 
         async function handleGeneralChat() {
@@ -643,7 +745,7 @@
             if (!text) return;
 
             const container = document.getElementById('general-messages');
-            const loader = document.getElementById('general-loading');
+            const type = 'general';
 
             if (container) {
                 addMessage(container, text, true);
@@ -655,37 +757,56 @@
             if (stats.general.recent.length > 5) stats.general.recent.pop();
             updateRecent('general');
 
-            await streamRequest('/stream_general_chat', {messages: history.general}, container, loader, stats.general, history.general);
+            await streamRequest('/stream_general_chat', {messages: history.general}, container, stats.general, history.general, type);
         }
 
-        async function streamRequest(endpoint, body, container, loader, statsObj, historyArray) {
+        async function streamRequest(endpoint, body, container, statsObj, historyArray, type) {
             if (!container) {
                 console.error("No container provided for stream request");
                 return;
             }
 
-            showLoading(loader, true);
+            updateStatus(type, 'connecting', 'Connecting to API...', `Endpoint: ${endpoint}`);
 
             let msgId = addMessage(container, "", false, {success: true}, true);
             let response = "";
             let startTime = Date.now();
             let isStreamComplete = false;
+            let timeoutWarningShown = false;
+
+            // Timeout warning for Vercel limits
+            const timeoutWarning = setTimeout(() => {
+                if (!isStreamComplete) {
+                    timeoutWarningShown = true;
+                    updateStatus(type, 'timeout', 'Request taking longer than expected...',
+                        'Vercel may timeout requests. Consider using a different deployment for very slow APIs.');
+                }
+            }, 45000); // 45 seconds warning for 60s limit
 
             try {
                 console.log("Starting stream request to:", endpoint);
+                updateStatus(type, 'waiting', 'Waiting for API response...', 'Request sent, waiting for first data...');
+
                 const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(body)
                 });
 
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                if (!res.ok) {
+                    clearTimeout(timeoutWarning);
+                    updateStatus(type, 'error', `HTTP Error ${res.status}`, res.statusText);
+                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                }
+
+                updateStatus(type, 'streaming', 'Receiving response...', 'Stream started');
 
                 const reader = res.body.getReader();
                 const decoder = new TextDecoder();
                 let buffer = "";
                 let firstChunk = false;
                 let lastUpdateTime = Date.now();
+                let chunkCount = 0;
 
                 while (true) {
                     const {value, done} = await reader.read();
@@ -694,6 +815,7 @@
                         break;
                     }
 
+                    chunkCount++;
                     buffer += decoder.decode(value, {stream: true});
                     let eventEndIndex;
 
@@ -713,12 +835,13 @@
                                         if (!firstChunk) {
                                             contentDiv.innerHTML = '';
                                             firstChunk = true;
+                                            updateStatus(type, 'streaming', 'Streaming response...', 'First content received');
                                         }
                                         response += data.delta;
 
                                         // Throttle updates for better performance with large responses
                                         const now = Date.now();
-                                        if (now - lastUpdateTime > 50) { // Update every 50ms max
+                                        if (now - lastUpdateTime > 100) { // Update every 100ms max
                                             const sqlRegex = /\b(SELECT|INSERT|UPDATE|DELETE)\b/i;
                                             if (container.id === 'sql-messages' && sqlRegex.test(response)) {
                                                 contentDiv.innerHTML = `<pre><code class="language-sql">${escape(response)}</code></pre>`;
@@ -732,10 +855,15 @@
 
                                             container.scrollTop = container.scrollHeight;
                                             lastUpdateTime = now;
+
+                                            // Update status with progress
+                                            updateStatus(type, 'streaming', 'Streaming response...',
+                                                `${response.length} chars received (${chunkCount} chunks)`);
                                         }
                                     } else if (data.type === "done") {
                                         console.log("Received done signal from stream");
                                         isStreamComplete = true;
+                                        clearTimeout(timeoutWarning);
 
                                         // Final update with complete response
                                         const sqlRegex = /\b(SELECT|INSERT|UPDATE|DELETE)\b/i;
@@ -767,12 +895,13 @@
                                             actionsDiv.innerHTML = `<button class="message-action-button" title="Copy" onclick="copyMessage(this)">${copyIcon}</button>`;
                                         }
 
-                                        showLoading(loader, false);
+                                        updateStatus(type, 'ready');
                                         console.log("Stream completed successfully");
                                         return;
                                     } else if (data.type === "error") {
+                                        clearTimeout(timeoutWarning);
                                         contentDiv.innerHTML = `<div class="error-text"><strong>Error:</strong> ${escape(data.delta)}</div>`;
-                                        showLoading(loader, false);
+                                        updateStatus(type, 'error', 'API Error', data.delta);
                                         console.error("Stream error:", data.delta);
                                         return;
                                     }
@@ -786,12 +915,14 @@
 
                 // Stream ended without explicit done signal
                 if (!isStreamComplete) {
+                    clearTimeout(timeoutWarning);
                     console.log("Stream ended without done signal, finalizing...");
                     const msgDiv = document.getElementById(msgId);
                     if (msgDiv) {
                         msgDiv.dataset.originalText = response;
                         if (!firstChunk && !response) {
                             msgDiv.querySelector('.message-content').innerHTML = "<em>[No content received]</em>";
+                            updateStatus(type, 'no-content', 'No content received', 'Stream ended without content');
                         } else if (response) {
                             // Final formatting
                             const contentDiv = msgDiv.querySelector('.message-content');
@@ -811,6 +942,7 @@
                             if (actionsDiv && response.trim()) {
                                 actionsDiv.innerHTML = `<button class="message-action-button" title="Copy" onclick="copyMessage(this)">${copyIcon}</button>`;
                             }
+                            updateStatus(type, 'ready');
                         }
                     }
                     if (historyArray && response) historyArray.push({role: "assistant", content: response});
@@ -821,15 +953,24 @@
                 }
 
             } catch (e) {
+                clearTimeout(timeoutWarning);
                 console.error("Stream request failed:", e);
                 const msgDiv = document.getElementById(msgId);
                 if (msgDiv) {
                     msgDiv.querySelector('.message-content').innerHTML = `<div class="error-text"><strong>Error:</strong> ${escape(e.message)}</div>`;
                 }
+
+                // Determine error type
+                if (e.name === 'TypeError' && e.message.includes('fetch')) {
+                    updateStatus(type, 'error', 'Network Error', 'Cannot connect to server');
+                } else if (e.message.includes('timeout')) {
+                    updateStatus(type, 'timeout', 'Request Timeout', 'Request took too long to complete');
+                } else {
+                    updateStatus(type, 'error', 'Request Failed', e.message);
+                }
+
                 statsObj.queries++;
                 updateStats();
-            } finally {
-                showLoading(loader, false);
             }
         }
 
