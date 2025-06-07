@@ -31,7 +31,7 @@ class MultiProviderAPI:
                 "base_url": "https://api.together.xyz/v1",
                 "model": "deepseek-ai/DeepSeek-R1",
                 "client": None,
-                "active": True,
+                "active": False,
                 "cost_per_1m_input": 0.55,
                 "cost_per_1m_output": 2.19,
                 "priority": 1
@@ -49,11 +49,11 @@ class MultiProviderAPI:
             },
             "deepseek": {
                 "name": "DeepSeek Direct",
-                "api_key": "YOUR_DEEPSEEK_KEY_HERE",
+                "api_key": "sk-0aec65f2f73b4afab86063184d94cf8f",
                 "base_url": "https://api.deepseek.com",
                 "model": "deepseek-reasoner",
                 "client": None,
-                "active": False,
+                "active": True,
                 "cost_per_1m_input": 0.14,
                 "cost_per_1m_output": 0.28,
                 "priority": 3
