@@ -18,10 +18,11 @@ class MultiProviderAPI:
                 "base_url": "https://api.together.xyz/v1",
                 "model": "deepseek-ai/DeepSeek-R1",
                 "client": None,
-                "active": True,
+                "active": False,
                 "cost_per_1m_input": 0.55,
                 "cost_per_1m_output": 2.19
             },
+
             "siliconflow": {
                 "name": "SiliconFlow",
                 "api_key": "YOUR_SILICONFLOW_KEY_HERE",  # Add when you get it
@@ -34,11 +35,11 @@ class MultiProviderAPI:
             },
             "deepseek": {
                 "name": "DeepSeek Direct",
-                "api_key": "YOUR_DEEPSEEK_KEY_HERE",  # Add when you get it
+                "api_key": "sk-0aec65f2f73b4afab86063184d94cf8f",  # Add when you get it
                 "base_url": "https://api.deepseek.com",
                 "model": "deepseek-reasoner",
                 "client": None,
-                "active": False,  # Set to True when you add the key
+                "active": True,  # Set to True when you add the key
                 "cost_per_1m_input": 0.14,
                 "cost_per_1m_output": 0.28
             },

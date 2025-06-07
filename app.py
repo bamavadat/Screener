@@ -16,6 +16,10 @@ print("INFO: app.py - Flask app instance created.", file=sys.stderr)
 
 # --- Multi-Provider API Class ---
 class MultiProviderAPI:
+    """
+    A class to manage multiple AI providers for chat completions.
+    Each provider can be independently configured and prioritized.
+    """
     def __init__(self):
         print(f"INFO: MultiProviderAPI - Initializing at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}",
               file=sys.stderr)
