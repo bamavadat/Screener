@@ -47,8 +47,8 @@ class MultiProviderAPI:
                 "cost_per_1m_output": 0.0,
                 "priority": 2
             },
-            "deepseek": {
-                "name": "DeepSeek Direct",
+            "deepseek-reasoner": {
+                "name": "DeepSeek Reasoner",
                 "api_key": "sk-0aec65f2f73b4afab86063184d94cf8f",
                 "base_url": "https://api.deepseek.com",
                 "model": "deepseek-reasoner",
@@ -56,8 +56,19 @@ class MultiProviderAPI:
                 "active": True,
                 "cost_per_1m_input": 0.14,
                 "cost_per_1m_output": 0.28,
+                "priority": 4
+            },
+            "deepseek-chat": {
+                "name": "DeepSeek Chat",
+                "api_key": "sk-0aec65f2f73b4afab86063184d94cf8f",
+                "base_url": "https://api.deepseek.com",
+                "model": "deepseek-chat",
+                "client": None,
+                "active": True,
+                "cost_per_1m_input": 0.14,
+                "cost_per_1m_output": 0.28,
                 "priority": 3
-            }
+            },
         }
 
         self._initialize_clients()
