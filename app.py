@@ -53,7 +53,7 @@ class MultiProviderAPI:
                 "base_url": "https://api.deepseek.com",
                 "model": "deepseek-reasoner",
                 "client": None,
-                "active": True,
+                "active": False,
                 "cost_per_1m_input": 0.14,
                 "cost_per_1m_output": 0.28,
                 "priority": 4
@@ -562,7 +562,7 @@ def test_api_route():
         if config["active"] and config["client"]:
             active_count += 1
             try:
-                print(f"INFO: [{ts}] Testing {config['name']}", file=sys.stderr)
+                print(f"INFO: [{ts}] Testing {config['name']}", file=sys.stdout)
 
                 response = config["client"].chat.completions.create(
                     model=config["model"],
